@@ -1,1 +1,1 @@
-{"platform": "skribbl", "image": "./server/images/Pop_Cat_v1.png", "speed": 1.0, "oneLineIs": 6.0, "accuracy": 0.5, "dither": 1, "ditherAccuracy": 2.0, "totallines": 99999.0, "box": 0}
+{"platform": "skribbl", "image": "https://cdn.discordapp.com/attachments/733635246846640198/825817831714455562/download.png", "speed": 1.0, "oneLineIs": 2.0, "accuracy": 1.0, "dither": 1, "ditherAccuracy": 2.0, "totallines": 999999.0, "box": 0, "delayBetweenColors": 0.0}

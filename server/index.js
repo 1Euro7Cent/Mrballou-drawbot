@@ -62,12 +62,6 @@ function sortOBJBySize(obj) {
     return objSorted
 }
 
-app.get('/stop', (request, response) => {
-    console.log('aborting')
-    aborting = true
-    response.send({ done: 1 })
-})
-
 
 app.get('/draw', (request, response) => {
     console.log('i got data')
@@ -83,10 +77,10 @@ app.get('/draw', (request, response) => {
     else {
         var dither = false
     }
-    if (gui.box === 1){
+    if (gui.box === 1) {
         var box = true
     }
-    else{
+    else {
         var box = false
     }
 
@@ -99,13 +93,12 @@ app.get('/draw', (request, response) => {
     var numOfRows = gui.totallines
     var oneLineIs = gui.oneLineIs // every x pixels in the painting programm a pixel of the original will be painted
     var accuracy = gui.accuracy // more meany less
+    var delayBetweenColors = gui.delayBetweenColors
 
     var ditherAccuracy = gui.ditherAccuracy
     //var file = './images/piano.jpg' //backround https://garticphone.com/images/bgcanvas.svg
     var file = gui.image
     response.send({ done: 1 })
-
-
 
 
 
@@ -161,7 +154,7 @@ app.get('/draw', (request, response) => {
                     console.log(file)
                     console.log(platform)
                     console.log('is it okay????')
-                    if (box){
+                    if (box) {
                         robot.mouseToggle('down')
                         robot.moveMouse(mousePos.x, mousePos.y)
                         robot.dragMouse(mousePos.x + (image.bitmap.width * oneLineIs), mousePos.y)
@@ -220,54 +213,65 @@ app.get('/draw', (request, response) => {
 
 
                             console.log(usedColors)
-                            for (let a in usedColors) {
-                                console.log(a)
-                                robot.moveMouse(config[platform].positions[a].x, config[platform].positions[a].y)
-                                robot.mouseClick()
-                                previusColor = a
+                            function next(a) {
 
+                                for (let y = 0; y < image.bitmap.height; y += accuracy) {
+                                    for (let x = 0; x < image.bitmap.width; x += accuracy) {
+                                        if (y >= numOfRows) continue;
+                                        var color = Jimp.intToRGBA(image.getPixelColor(x, y))
+                                        var fullHex = fullColorHex(color.r, color.g, color.b)
+                                        var nearest = nearestColor('#' + fullHex)
+                                        if (nearest.value === ignoringColors || aborting) continue;
+                                        if (nearest.value !== a) continue;
 
-                                async function next() {
-
-
-                                    for (let y = 0; y < image.bitmap.height; y += accuracy) {
-                                        for (let x = 0; x < image.bitmap.width; x += accuracy) {
-                                            if (y >= numOfRows) continue;
-                                            var color = Jimp.intToRGBA(image.getPixelColor(x, y))
-                                            var fullHex = fullColorHex(color.r, color.g, color.b)
-                                            var nearest = nearestColor('#' + fullHex)
-                                            if (nearest.value === ignoringColors || aborting) continue;
-                                            if (nearest.value !== a) continue;
-
-                                            try {
-                                                if (fs.existsSync('./server/aborting.json')) {
-                                                    aborting = true
-                                                }
-                                            } catch (err) {
-                                                console.error(err)
+                                        try {
+                                            if (fs.existsSync('./server/aborting.json')) {
+                                                aborting = true
                                             }
-                                            //console.log(aborting)
-                                            robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
-                                            robot.mouseClick()
-
+                                        } catch (err) {
+                                            console.error(err)
                                         }
+                                        //console.log(aborting)
+                                        robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
+                                        robot.mouseClick()
+
                                     }
-
                                 }
-                                if (usedColors[largest.name] === a) {
 
-                                }
+                            }
+                            var colors = []
+                            for (let o in usedColors) {
+                                colors.push(o)
+                            }
+                            var temp = 0
+                            function z() {
+                                temp++
+                                if (temp >= colors.length) return console.log('Done!!!')
+                                console.log(colors[temp])
+                                robot.moveMouse(config[platform].positions[colors[temp]].x, config[platform].positions[colors[temp]].y)
+                                robot.mouseClick()
+                                previusColor = colors[temp]
+                                if (usedColors[largest.name] === colors[temp]) { }
                                 else {
-                                    next()
+                                    next(colors[temp])
+                                    if (aborting) {
+                                        z()
+                                    }
+                                    else {
+                                        setTimeout(() => {
+                                            z()
+                                        }, delayBetweenColors);
+                                    }
                                 }
                             }
-                            console.log('Done!!!')
+                            z()
+                            //console.log('Done!!!')
                         }, 1000);
                     }, 3000);
 
 
 
-                }, 3000);
+                }, 2500);
             })
         }, 100);
     })
