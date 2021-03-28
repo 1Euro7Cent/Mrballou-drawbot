@@ -18,7 +18,8 @@
 ## Running
 just double-click the `start.bat` file and then a few cmd's and the GUI will pop up. 
 
-In the GUI you can set everything up feel free to figure out what witch function does.
+In the GUI you can set everything up feel free to figure out what witch function does. \
+After you pressed draw QUICKLY move your mouse to the top left of the drawing canvas
 
 If you somehow mess things up you can terminate the drawing by pressing `ESC`
 
