@@ -204,6 +204,16 @@ app.get('/draw', (request, response) => {
 
 
                         setTimeout(() => {
+                            console.log(`
+                                         *----------------------------*
+                                         |                            |
+                                         |   drawbot by mrballou      |   
+                                         |   support this work        |
+                                         |   on patreon               |
+                                         |   patreon.com/mrballou     |
+                                         |                            |
+                                         |                            |
+                                         *----------------------------*`)
 
 
 
