@@ -103,6 +103,7 @@ app.get('/draw', (request, response) => {
 
 
     Jimp.read(file, function (err, image) {
+        if (typeof image === 'undefined')return console.log('Invalid image provided')
         robot.setMouseDelay(gui.speed);
         if (dither) {
             async function dithering() {
@@ -173,12 +174,6 @@ app.get('/draw', (request, response) => {
 
 
                     setTimeout(() => {
-
-
-
-
-
-
 
 
                         robot.moveMouse(config[platform].positions.fillbucket.x, config[platform].positions.fillbucket.y)

@@ -104,14 +104,13 @@ def windowopener():
 x = threading.Thread(target=windowopener, args=())
 x.start()
 
-def on_press (key):
-    print("{0} presed".format(key))
 
 def on_release(key):
     if key == Key.esc:
+        print('ESC pressed. Aborting print')
         f = open("./server/aborting.json", "w")
         f.close()
         #quit()
 
-with Listener(on_press = on_press, on_release= on_release) as Listener:
+with Listener(on_release= on_release) as Listener:
     Listener.join()
