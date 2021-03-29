@@ -3,6 +3,7 @@
 ## Requirements
 + NodeJS 14.16.0
 + Python 3.9
++ Requests - `pip install requests`
 
 ## Initialitation
  open a command prompt in the "server" folder and type `node initialisation.js`\
