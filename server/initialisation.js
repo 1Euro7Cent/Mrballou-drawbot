@@ -9,7 +9,7 @@ readline.question(`What game? `, (w) => {
     readline.close()
     console.log('registred', w)
     console.log('note! to end this just ctrl + c the script')
-    console.log('Hover over the pen')
+    console.log('Hover over the top left of the drawing canvas')
     
     setTimeout(() => {
         
@@ -30,6 +30,21 @@ readline.question(`What game? `, (w) => {
                 }
                 switch (count) {
                     case 1:
+                        data[game].positions.topleft = {
+                            x: pos.x,
+                            y: pos.y
+                        }
+                        console.log('hover over the bottom right of the drawing canvas')
+
+                        break;
+                        case 2:
+                            data[game].positions.bottomright = {
+                                x: pos.x,
+                                y: pos.y
+                            }
+                            console.log('hover over the pen')
+                            break
+                    case 3:
                         data[game].positions.pen = {
                             x: pos.x,
                             y: pos.y
@@ -37,7 +52,7 @@ readline.question(`What game? `, (w) => {
                         console.log('Hover over the fill bucket')
                         break;
                         
-                        case 2:
+                        case 4:
                             data[game].positions.fillbucket = {
                                 x: pos.x,
                                 y: pos.y
