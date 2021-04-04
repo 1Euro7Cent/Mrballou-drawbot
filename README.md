@@ -7,6 +7,7 @@
 + pynput - `pip install pynput`
 
 ## Initialitation
+Video (click image below)\
 [![placeholder](https://img.youtube.com/vi/L3-oa-rd4gA/0.jpg)](https://youtu.be/L3-oa-rd4gA) \
  open a command prompt in the "server" folder and type `node initialisation.js`\
  in there you need to type the game e.g.: `skribbl`. 
