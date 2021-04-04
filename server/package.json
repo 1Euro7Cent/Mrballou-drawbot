@@ -17,6 +17,7 @@
     "jimp": "^0.16.1",
     "mcfsd": "^1.2.1",
     "nearest-color": "^0.4.4",
+    "resize-img": "^2.0.0",
     "robotjs": "^0.6.0"
   }
 }
