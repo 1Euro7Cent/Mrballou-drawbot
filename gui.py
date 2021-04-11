@@ -106,15 +106,18 @@ def windowopener():
     delay.grid(row=9, column=1)
 
     dithering = tk.IntVar()
+    dithering.set(True)
     tk.Checkbutton(window, text="Dither",
                    variable=dithering).grid(row=5, column=1)
     box = tk.IntVar()
+    
     tk.Checkbutton(window, text="Box", variable=box).grid(row=5, column=0)
 
     #googleImageing = tk.IntVar()
     #tk.Checkbutton(window, text="Google imageing",
     #               variable=googleImageing).grid(row=10, column=1)
     resizing = tk.IntVar()
+    resizing.set(True)
     tk.Checkbutton(window, text="Auto resizing",
                    variable=resizing).grid(row=10, column=1)
 
