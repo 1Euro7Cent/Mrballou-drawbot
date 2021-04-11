@@ -90,7 +90,7 @@ def windowopener():
         0, 'https://cdn.discordapp.com/attachments/818941739535564811/825802466498576402/unknown.png')
     e2.insert(0, 'skribbl')
     e3.insert(0, '1')
-    e4.insert(0, '2')
+    e4.insert(0, '2.6')
     e5.insert(0, '1')
     e6.insert(0, '2')
     num.insert(0, '999999')

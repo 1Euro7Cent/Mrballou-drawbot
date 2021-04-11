@@ -154,6 +154,7 @@ app.get('/draw', (request, response) => {
                 file = './server/images/resized_image.png'
             }
             if (dither) await dithering()
+            //return
             setTimeout(() => {
                 if (resizing) resize()
                 setTimeout(() => {
