@@ -58,8 +58,7 @@ def windowopener():
                 "ditherAccuracy": float(e6.get()),
                 "totallines": float(num.get()),
                 "box": box.get(),
-                "delayBetweenColors":  float(delay.get()),
-                "resizing": resizing.get()
+                "delayBetweenColors":  float(delay.get())
             }, f)
             f.close()
             requests.get(url=URL, params={})
@@ -116,10 +115,10 @@ def windowopener():
     #googleImageing = tk.IntVar()
     #tk.Checkbutton(window, text="Google imageing",
     #               variable=googleImageing).grid(row=10, column=1)
-    resizing = tk.IntVar()
-    resizing.set(True)
-    tk.Checkbutton(window, text="Auto resizing",
-                   variable=resizing).grid(row=10, column=1)
+    #resizing = tk.IntVar()
+    #resizing.set(True)
+    #tk.Checkbutton(window, text="Auto resizing",
+    #               variable=resizing).grid(row=10, column=1)
 
     button = tk.Button(window, text='Draw', width=5, command=draw)
     button.grid(column=1)
