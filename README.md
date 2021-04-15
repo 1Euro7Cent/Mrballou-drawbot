@@ -1,7 +1,7 @@
 # Drawbot for skribbl.io, gartic phone ect
 
 ## Requirements
-+ NodeJS 14.16.0
++ NodeJS 14.16.1
 + Python 3.9
 + Requests - `pip install requests`
 + pynput - `pip install pynput`
