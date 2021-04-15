@@ -58,9 +58,7 @@ def windowopener():
                 "ditherAccuracy": float(e6.get()),
                 "totallines": float(num.get()),
                 "box": box.get(),
-                "delayBetweenColors":  float(delay.get()),
-                "fast": float(resizing.get()),
-                "bucket": bucket.get()
+                "delayBetweenColors":  float(delay.get())
             }, f)
             f.close()
             requests.get(url=URL, params={})
@@ -69,14 +67,14 @@ def windowopener():
 
     window.title('Drawbot by mrballou')
 
-    tk.Label(window, text="platform").grid(row=0)
-    tk.Label(window, text="speed").grid(row=1)
-    tk.Label(window, text="one line is").grid(row=2)
-    tk.Label(window, text="accuracy").grid(row=3)
-    tk.Label(window, text="ditherAccuracy").grid(row=4)
+    tk.Label(window, text="Image URL").grid(row=0)
+    tk.Label(window, text="platform").grid(row=1)
+    tk.Label(window, text="speed").grid(row=2)
+    tk.Label(window, text="one line is").grid(row=3)
+    tk.Label(window, text="accuracy").grid(row=4)
+    tk.Label(window, text="ditherAccuracy").grid(row=6)
     tk.Label(window, text="total lines").grid(row=7)
-    tk.Label(window, text="Delay between colors").grid(row=8)
-    tk.Label(window, text="Image URL").grid(row=9)
+    tk.Label(window, text="Delay between colors").grid(row=9)
 
     e1 = tk.Entry(window)
     e2 = tk.Entry(window)
@@ -97,14 +95,14 @@ def windowopener():
     num.insert(0, '999999')
     delay.insert(0, '0')
 
-    e1.grid(row=9, column=1)
-    e2.grid(row=0, column=1)
-    e3.grid(row=1, column=1)
-    e4.grid(row=2, column=1)
-    e5.grid(row=3, column=1)
-    e6.grid(row=4, column=1)
+    e1.grid(row=0, column=1)
+    e2.grid(row=1, column=1)
+    e3.grid(row=2, column=1)
+    e4.grid(row=3, column=1)
+    e5.grid(row=4, column=1)
+    e6.grid(row=6, column=1)
     num.grid(row=7, column=1)
-    delay.grid(row=8, column=1)
+    delay.grid(row=9, column=1)
 
     dithering = tk.IntVar()
     dithering.set(True)
@@ -117,14 +115,10 @@ def windowopener():
     #googleImageing = tk.IntVar()
     #tk.Checkbutton(window, text="Google imageing",
     #               variable=googleImageing).grid(row=10, column=1)
-    resizing = tk.IntVar()
-    resizing.set(True)
-    tk.Checkbutton(window, text="Fast mode",
-                   variable=resizing).grid(row=6, column=0)
-    bucket = tk.IntVar()
-    bucket.set(True)
-    tk.Checkbutton(window, text="Bucket",
-                   variable=bucket).grid(row=6, column=1)
+    #resizing = tk.IntVar()
+    #resizing.set(True)
+    #tk.Checkbutton(window, text="Auto resizing",
+    #               variable=resizing).grid(row=10, column=1)
 
     button = tk.Button(window, text='Draw', width=5, command=draw)
     button.grid(column=1)

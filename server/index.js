@@ -6,7 +6,7 @@ const express = require('express')
 const resizeImg = require('resize-img');
 
 var port = 1337
-var nextline
+var nextline = true
 var tries = 0;
 
 const app = express()
@@ -86,18 +86,6 @@ app.get('/draw', (request, response) => {
     }
     else {
         var box = false
-    }
-    if (gui.fast === 1) {
-        var fast = true
-    }
-    else {
-        var fast = false
-    }
-    if (gui.bucket === 1) {
-        var bucket = true
-    }
-    else {
-        var bucket = false
     }
     var resizing = true
 
@@ -240,9 +228,8 @@ app.get('/draw', (request, response) => {
                 //}
                 maxSize(w, h, image.bitmap.width, image.bitmap.height)
             }
-
+            //return
             resize()
-            //draw(undefined, undefined, 'https://cdn.discordapp.com/attachments/827874027434672158/832279156317356052/unknown.png')
 
 
 
@@ -269,6 +256,7 @@ app.get('/draw', (request, response) => {
         //return console.log('drawing with', file)
 
 
+
         //return
 
 
@@ -285,7 +273,7 @@ app.get('/draw', (request, response) => {
             robot.moveMouse(config[platform].positions.topleft.x, config[platform].positions.topleft.y)
             setTimeout(() => {
 
-                //robot.mouseClick()
+                robot.mouseClick()
             }, 20);
 
             //image.getPixelColour
@@ -293,7 +281,6 @@ app.get('/draw', (request, response) => {
 
             //init colors
             var usedColors = {}
-            //var lines = {}
             for (let y = 0; y < image.bitmap.height; y++) {
                 for (let x = 0; x < image.bitmap.width; x++) {
                     var color = Jimp.intToRGBA(image.getPixelColor(x, y))
@@ -307,12 +294,8 @@ app.get('/draw', (request, response) => {
                 }
             }
             var largest = sortOBJ(usedColors)
-            //robot.mouseToggle('down')
-            //robot.dragMouse(mousePos.x + 200, mousePos.y)
-            //robot.mouseToggle('up')
             usedColors = sortOBJBySize(usedColors)
             //draw
-            //return console.log(usedColors);
 
             console.log(file)
             console.log(platform)
@@ -338,111 +321,70 @@ app.get('/draw', (request, response) => {
 
             setTimeout(() => {
 
-                if (bucket) {
 
-                    robot.moveMouse(config[platform].positions.fillbucket.x, config[platform].positions.fillbucket.y)
+                robot.moveMouse(config[platform].positions.fillbucket.x, config[platform].positions.fillbucket.y)
+                setTimeout(() => {
+                    robot.mouseClick()
                     setTimeout(() => {
-                        robot.mouseClick()
+                        robot.moveMouse(config[platform].positions[largest.name].x, config[platform].positions[largest.name].y)
                         setTimeout(() => {
-                            robot.moveMouse(config[platform].positions[largest.name].x, config[platform].positions[largest.name].y)
+                            robot.mouseClick()
                             setTimeout(() => {
-                                robot.mouseClick()
+                                robot.moveMouse(mousePos.x + 10, mousePos.y + 10)
                                 setTimeout(() => {
-                                    robot.moveMouse(mousePos.x + 10, mousePos.y + 10)
+                                    robot.mouseClick()
                                     setTimeout(() => {
-                                        robot.mouseClick()
+                                        robot.moveMouse(config[platform].positions.pen.x, config[platform].positions.pen.y)
                                         setTimeout(() => {
-                                            robot.moveMouse(config[platform].positions.pen.x, config[platform].positions.pen.y)
-                                            setTimeout(() => {
-                                                robot.mouseClick()
-                                            }, 20);
+                                            robot.mouseClick()
                                         }, 20);
                                     }, 20);
-
                                 }, 20);
+
                             }, 20);
                         }, 20);
-
                     }, 20);
-                    ignoringColors = largest.name
-                }
-                else {
-                    ignoringColors = ''
-                }
+
+                }, 20);
+                ignoringColors = largest.name
 
                 //return
                 setTimeout(() => {
                     console.log(usedColors)
 
                     function next(a) {
-                        nextline = 1
 
                         for (let y = 0; y < image.bitmap.height; y += accuracy) {
                             if (fs.existsSync('./server/aborting.json')) {
                                 aborting = true
                             }
                             for (let x = 0; x < image.bitmap.width; x += accuracy) {
-                                //nextline = 0
-                                nextline--
-                                //if (x > nextline) break
                                 if (y >= numOfRows) continue;
                                 var color = Jimp.intToRGBA(image.getPixelColor(x, y))
                                 var fullHex = fullColorHex(color.r, color.g, color.b)
                                 var nearest = nearestColor('#' + fullHex)
-                                var looping
-
-                                if (nextline <= 0) {
-
-                                    if (nearest.value === ignoringColors || aborting) continue;
-                                    if (nearest.value !== a) continue;
-                                    if (fast) {
-
-                                        var colornext = Jimp.intToRGBA(image.getPixelColor(x + 1, y))
-                                        var fullHexnext = fullColorHex(colornext.r, colornext.g, colornext.b)
-                                        var nearestnext = nearestColor('#' + fullHexnext)
-                                        if (nearestnext.value === nearest.value) {
-                                            looping = true
-                                            var lines = 0
-                                            let nextc
-                                            let nexth
-                                            let nextnc
-                                            for (let l = 1; looping; l += 1) {
-
-                                                //console.log('calculating', lines)
-                                                nextc = Jimp.intToRGBA(image.getPixelColor(x + l, y))
-                                                nexth = fullColorHex(nextc.r, nextc.g, nextc.b)
-                                                nextnc = nearestColor('#' + nexth)
-                                                if (x + l > image.bitmap.width) {
-                                                    lines = l
-                                                    looping = false
-                                                    continue
-                                                }
-                                                if (a !== nextnc.value) {
-                                                    lines = l
-                                                    looping = false
-                                                }
-
-                                            }
-                                            robot.moveMouse(mousePos.x + (x * oneLineIs), mousePos.y + (y * oneLineIs))
-                                            robot.mouseToggle('down')
-                                            robot.dragMouse(mousePos.x + (x + lines) * oneLineIs, mousePos.y + (y * oneLineIs))
-                                            robot.mouseToggle('up')
-                                            //console.log('draging', lines)
-                                            //nextline = 0
-                                            nextline = lines
-                                        }
-                                        else {
-                                            nextline = 0
-                                            robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
-                                            robot.mouseClick()
-                                        }
-                                    }
-                                    else {
-
-                                        robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
-                                        robot.mouseClick()
-                                    }
+                                if (!nextline) {
+                                    nextline = true
+                                    continue;
                                 }
+                                if (nearest.value === ignoringColors || aborting) continue;
+                                if (nearest.value !== a) continue;
+                                var colornext = Jimp.intToRGBA(image.getPixelColor(x + 1, y))
+                                var fullHexnext = fullColorHex(colornext.r, colornext.g, colornext.b)
+                                var nearestnext = nearestColor('#' + fullHexnext)
+                                /*if (nearestnext.value === nearest.value){
+                                    robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
+                                    robot.mouseToggle('down')
+                                    robot.dragMouse(mousePos.x + (x * oneLineIs - 1) + 1, mousePos.y + (y * oneLineIs - 1))
+                                    robot.mouseToggle('up')
+                                    //console.log('draging')
+                                    nextline = false
+                                }
+                                else{*/
+                                nextline = true
+                                robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
+                                robot.mouseClick()
+                                // }
                             }
                         }
 
