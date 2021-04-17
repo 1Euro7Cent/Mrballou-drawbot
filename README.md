@@ -14,7 +14,8 @@ Video (outdated. making a new soon)(click image below)\
  FIRST hover over the pen tool.
  Then over the fill tool
  and then hover over all possible colors.
- After you done that just quickly go in the command prompt and press CTRL + c
+ After you done that just quickly go in the command prompt and press CTRL + c.\
+ if the server was running please restart the server
 
 
 
