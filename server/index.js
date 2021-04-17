@@ -3,6 +3,7 @@ const Jimp = require('jimp')
 const fs = require('fs')
 const mcfsd = require("mcfsd");
 const express = require('express')
+//const { spawn } = require('child_process')
 const resizeImg = require('resize-img');
 
 var port = 1337
@@ -12,6 +13,16 @@ var tries = 0;
 const app = express()
 app.listen(port, () => { console.log('listining on', port) })
 app.use(express.static('public'))
+// start python script
+/*
+python = spawn('python', ['gui.py']);
+python.on('close', (code) => {
+    console.log(`child process (gui.py) closed with code ${code}`);
+});
+python.stdout.on('data', function (data) {
+    console.log('got event')
+    console.log(data.toString());
+});*/
 
 
 
@@ -81,11 +92,11 @@ app.get('/draw', (request, response) => {
     else {
         var dither = false
     }
-    if (gui.box === 1) {
-        var box = true
+    if (gui.sortColors === 1) {
+        var sortColors = true
     }
     else {
-        var box = false
+        var sortColors = false
     }
     if (gui.fast === 1) {
         var fast = true
@@ -310,29 +321,14 @@ app.get('/draw', (request, response) => {
             //robot.mouseToggle('down')
             //robot.dragMouse(mousePos.x + 200, mousePos.y)
             //robot.mouseToggle('up')
-            usedColors = sortOBJBySize(usedColors)
             //draw
             //return console.log(usedColors);
-
-            console.log(file)
+            
+            //console.log(file)
             console.log(platform)
-            console.log('is it okay????')
             //return
-            if (box) {
-                robot.mouseToggle('down')
-                robot.moveMouse(mousePos.x, mousePos.y)
-                robot.dragMouse(mousePos.x + (image.bitmap.width * oneLineIs), mousePos.y)
-                setTimeout(() => {
-                    robot.dragMouse(mousePos.x + (image.bitmap.width * oneLineIs), mousePos.y + (image.bitmap.height * oneLineIs))
-                    setTimeout(() => {
-                        robot.dragMouse(mousePos.x, mousePos.y + (image.bitmap.height * oneLineIs))
-                        setTimeout(() => {
-                            robot.dragMouse(mousePos.x, mousePos.y)
-                            robot.mouseToggle('up')
-
-                        }, 20);
-                    }, 20);
-                }, 20);
+            if (sortColors) {
+                usedColors = sortOBJBySize(usedColors)
             }
 
 
@@ -367,7 +363,7 @@ app.get('/draw', (request, response) => {
                     ignoringColors = largest.name
                 }
                 else {
-                    ignoringColors = ''
+                    ignoringColors = '#ffffff'
                 }
 
                 //return

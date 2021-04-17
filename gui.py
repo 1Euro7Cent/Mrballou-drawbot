@@ -57,7 +57,7 @@ def windowopener():
                 "dither": dithering.get(),
                 "ditherAccuracy": float(e6.get()),
                 "totallines": float(num.get()),
-                "box": box.get(),
+                "sortColors": box.get(),
                 "delayBetweenColors":  float(delay.get()),
                 "fast": float(resizing.get()),
                 "bucket": bucket.get()
@@ -91,7 +91,7 @@ def windowopener():
         0, 'https://cdn.discordapp.com/attachments/818941739535564811/825802466498576402/unknown.png')
     e2.insert(0, 'skribbl')
     e3.insert(0, '1')
-    e4.insert(0, '2.6')
+    e4.insert(0, '2')
     e5.insert(0, '1')
     e6.insert(0, '2')
     num.insert(0, '999999')
@@ -107,12 +107,13 @@ def windowopener():
     delay.grid(row=8, column=1)
 
     dithering = tk.IntVar()
-    dithering.set(True)
+    dithering.set(False)
     tk.Checkbutton(window, text="Dither",
                    variable=dithering).grid(row=5, column=1)
     box = tk.IntVar()
+    box.set(True)
     
-    tk.Checkbutton(window, text="Box", variable=box).grid(row=5, column=0)
+    tk.Checkbutton(window, text="Sort colors", variable=box).grid(row=5, column=0)
 
     #googleImageing = tk.IntVar()
     #tk.Checkbutton(window, text="Google imageing",
