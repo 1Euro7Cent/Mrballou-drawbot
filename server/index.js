@@ -1,32 +1,33 @@
+const arg = process.argv[2]
+if (arg === 'debug') {
+    var debug = true
+}
+else {
+    var debug = false
+}
 const robot = require("robotjs");
 const Jimp = require('jimp')
 const fs = require('fs')
 const mcfsd = require("mcfsd");
 const express = require('express')
-//const { spawn } = require('child_process')
 const resizeImg = require('resize-img');
 
 var port = 1337
 var nextline
 var tries = 0;
+//var resizingFactor = 1
+var resizeDelay = 5
 
 const app = express()
 app.listen(port, () => { console.log('listining on', port) })
 app.use(express.static('public'))
-// start python script
-/*
-python = spawn('python', ['gui.py']);
-python.on('close', (code) => {
-    console.log(`child process (gui.py) closed with code ${code}`);
-});
-python.stdout.on('data', function (data) {
-    console.log('got event')
-    console.log(data.toString());
-});*/
 
 
 
-const config = require('./config.json');
+
+if (debug) console.log(`loading config from:`, './server/config.json')
+const config = JSON.parse(fs.readFileSync('./server/config.json'))
+if (debug) console.log(`config loaded:`, config)
 
 
 var aborting = false
@@ -78,12 +79,13 @@ function sortOBJBySize(obj) {
 
 
 app.get('/draw', (request, response) => {
-    //console.log('i got data')
+    if (debug) console.log(`got instruction to draw`)
+    if (debug) console.log(`loaded config:`, config)
     aborting = false
 
-    fs.unlink('./server/aborting.json', () => { })
+    fs.unlink('./server/aborting.json', () => { if (debug) console.log(`deleted "aborting.json" file`) })
     var gui = JSON.parse(fs.readFileSync('./server/gui.json'))
-    //console.log(gui)
+    if (debug) console.log(`gui loaded:`, gui)
     response.send({ done: 1 })
 
     if (gui.dither === 1) {
@@ -115,6 +117,7 @@ app.get('/draw', (request, response) => {
 
 
     var platform = gui.platform
+    if (debug) console.log(`config for platform:`, config[platform])
     if (typeof config[platform] === 'undefined') return console.error('invalid platform')
     var colors = config[platform].colors
     var nearestColor = require('nearest-color').from(colors);
@@ -133,6 +136,7 @@ app.get('/draw', (request, response) => {
         tries++
         //download image
         if (resizing) {
+            if (debug) console.log(`downloading image`)
 
             Jimp.read(file, function (err, image) {
                 if (typeof image === 'undefined') return console.log('Invalid image provided')
@@ -180,8 +184,15 @@ app.get('/draw', (request, response) => {
                         tempnewWidth = cwidth
                     }
                     if ((cwidth < mwidth) || (cheight < mheight)) {
-                        tempnewWidth = Math.round(cwidth * 1.05)
-                        tempnewHeight = Math.round(cheight * 1.05)
+                        if (typeof resizingFactor !== 'undefined') {
+
+                            tempnewWidth = Math.round(cwidth + resizingFactor)
+                            tempnewHeight = Math.round(cheight + resizingFactor)
+                        }
+                        else {
+                            tempnewWidth = Math.round(cwidth * 1.05)
+                            tempnewHeight = Math.round(cheight * 1.05)
+                        }
                         if (tempnewHeight > mheight || tempnewWidth > mwidth) {
                             canDraw = true
 
@@ -194,22 +205,31 @@ app.get('/draw', (request, response) => {
                                 console.log('resizing to:', tempnewWidth, tempnewHeight, '(maximising)')
 
                                 maxSize(mwidth, mheight, tempnewWidth, tempnewHeight)
-                            }, 50);
+                            }, resizeDelay);
                         }
 
                     }
                     //else {
 
                     if ((cwidth > mwidth) || (cheight > mheight)) {
-                        newWidth = Math.round(cwidth / 1.05)
-                        newHeight = Math.round(cheight / 1.05)
+                        if (typeof resizingFactor !== 'undefined') {
+
+                            newWidth = Math.round(cwidth - resizingFactor)
+                            newHeight = Math.round(cheight - resizingFactor)
+
+                        }
+                        else {
+
+                            newWidth = Math.round(cwidth / 1.05)
+                            newHeight = Math.round(cheight / 1.05)
+                        }
                         type = 'min'
                         canDraw = false
                         setTimeout(() => {
                             console.log('resizing to:', newWidth, newHeight, '(minimising)')
 
                             maxSize(mwidth, mheight, newWidth, newHeight)
-                        }, 50);
+                        }, resizeDelay);
 
                     }
                     else {
@@ -222,11 +242,13 @@ app.get('/draw', (request, response) => {
                     if (canDraw) {
 
                         if (file.startsWith('http')) {
+                            if (debug) console.log(`error while downloading (file startswith http)`)
                             console.log('retrying')
                             retry()
                             return
                         }
                         else {
+                            if (cwidth <= 0 || cheight <=0) return console.log('can\'t process that image')
                             var newImage = await resizeImg(fs.readFileSync(file), { width: cwidth, height: cheight });
 
 
@@ -265,6 +287,7 @@ app.get('/draw', (request, response) => {
 
         //console.log('final output:', cwidth, cheight)
         if (file.startsWith('./server/images/downloaded_image.png')) {
+
             console.log('retrying')
             retry()
             return
@@ -296,13 +319,15 @@ app.get('/draw', (request, response) => {
             robot.moveMouse(config[platform].positions.topleft.x, config[platform].positions.topleft.y)
             setTimeout(() => {
 
-                //robot.mouseClick()
+                robot.mouseClick()
             }, 20);
 
             //image.getPixelColour
             var mousePos = robot.getMousePos()
+            if (debug) console.log(`current mose pos:`, mousePos)
 
             //init colors
+            if (debug) console.log(`initializing colors`)
             var usedColors = {}
             //var lines = {}
             for (let y = 0; y < image.bitmap.height; y++) {
@@ -323,11 +348,12 @@ app.get('/draw', (request, response) => {
             //robot.mouseToggle('up')
             //draw
             //return console.log(usedColors);
-            
+
             //console.log(file)
             console.log(platform)
             //return
             if (sortColors) {
+                if (debug) console.log(`corting colors by size (biggest goes last)`)
                 usedColors = sortOBJBySize(usedColors)
             }
 
@@ -335,6 +361,7 @@ app.get('/draw', (request, response) => {
             setTimeout(() => {
 
                 if (bucket) {
+                    if (debug) console.log(`bucketing`)
 
                     robot.moveMouse(config[platform].positions.fillbucket.x, config[platform].positions.fillbucket.y)
                     setTimeout(() => {
@@ -363,7 +390,8 @@ app.get('/draw', (request, response) => {
                     ignoringColors = largest.name
                 }
                 else {
-                    ignoringColors = '#ffffff'
+                    //ignoringColors = '#ffffff'
+                    ignoringColors = ''
                 }
 
                 //return
@@ -371,6 +399,7 @@ app.get('/draw', (request, response) => {
                     console.log(usedColors)
 
                     function next(a) {
+                        if (debug) console.log(`drawing with new color:`, a)
                         nextline = 1
 
                         for (let y = 0; y < image.bitmap.height; y += accuracy) {
@@ -402,39 +431,43 @@ app.get('/draw', (request, response) => {
                                             let nextc
                                             let nexth
                                             let nextnc
+                                            if (debug) console.log(`getting draging information`)
                                             for (let l = 1; looping; l += 1) {
 
                                                 //console.log('calculating', lines)
-                                                nextc = Jimp.intToRGBA(image.getPixelColor(x + l, y))
-                                                nexth = fullColorHex(nextc.r, nextc.g, nextc.b)
-                                                nextnc = nearestColor('#' + nexth)
                                                 if (x + l > image.bitmap.width) {
                                                     lines = l
                                                     looping = false
                                                     continue
                                                 }
+                                                nextc = Jimp.intToRGBA(image.getPixelColor(x + l, y))
+                                                nexth = fullColorHex(nextc.r, nextc.g, nextc.b)
+                                                nextnc = nearestColor('#' + nexth)
                                                 if (a !== nextnc.value) {
                                                     lines = l
                                                     looping = false
                                                 }
 
                                             }
+
+                                            if (debug) console.log(`draging from `, mousePos.x + (x * oneLineIs), mousePos.y + (y * oneLineIs), 'to', mousePos.x + (x + lines - 1) * oneLineIs, mousePos.y + (y * oneLineIs), `(${lines} pixels)`)
                                             robot.moveMouse(mousePos.x + (x * oneLineIs), mousePos.y + (y * oneLineIs))
                                             robot.mouseToggle('down')
-                                            robot.dragMouse(mousePos.x + (x + lines) * oneLineIs, mousePos.y + (y * oneLineIs))
+                                            robot.dragMouse(mousePos.x + (x + lines - 1) * oneLineIs, mousePos.y + (y * oneLineIs))
                                             robot.mouseToggle('up')
                                             //console.log('draging', lines)
                                             //nextline = 0
                                             nextline = lines
                                         }
                                         else {
+                                            if (debug) console.log(`dotting at`, mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
                                             nextline = 0
                                             robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
                                             robot.mouseClick()
                                         }
                                     }
                                     else {
-
+                                        if (debug) console.log(`dotting`)
                                         robot.moveMouse(mousePos.x + (x * oneLineIs - 1), mousePos.y + (y * oneLineIs - 1))
                                         robot.mouseClick()
                                     }
@@ -444,10 +477,11 @@ app.get('/draw', (request, response) => {
 
                     }
                     var colors = []
+                    if (debug) console.log(`pushing colors to array`)
                     for (let o in usedColors) {
                         colors.push(o)
                     }
-                    //console.log('colors', colors)
+                    if (debug) console.log('color array:', colors)
                     var temp = -1
                     function z() {
                         temp++
@@ -472,6 +506,7 @@ app.get('/draw', (request, response) => {
                                 z()
                             }
                             else {
+                                if (debug) console.log(`waiting`, delayBetweenColors, 'milliseconds')
                                 setTimeout(() => {
                                     z()
                                 }, delayBetweenColors);

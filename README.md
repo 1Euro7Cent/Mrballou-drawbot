@@ -28,6 +28,8 @@ After you pressed draw dont move the mouse anymore unless the script finished
 If you somehow mess things up you can terminate the drawing by pressing `ESC`
 
 ## Additional information
+You can start the server in debug mode to see a lot more (helpfull to see errors).
+to do that just run `startServerInDebug.bat`\
 in the `Image URL` field you can put a file path in there. Note the path starts at the main folder\
 The `Delay between colors` value is in milliseconds   
 Any errors will go to the console where it says `listining on 1337`. e.g.: `invalid image`

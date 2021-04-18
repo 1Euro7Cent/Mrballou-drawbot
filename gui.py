@@ -7,7 +7,18 @@ from pynput.keyboard import Key, Listener
 #from icrawler.builtin import GoogleImageCrawler
 import os
 #from PIL import ImageTk, Image
-
+defaultValues = {"platform": "skribbl",
+                 "image": "https://cdn.discordapp.com/attachments/818941739535564811/825802466498576402/unknown.png",
+                 "speed": 1.0,
+                 "oneLineIs": 2.0,
+                 "accuracy": 1.0,
+                 "dither": 0,
+                 "ditherAccuracy": 2.0,
+                 "totallines": 999999.0,
+                 "sortColors": 1,
+                 "delayBetweenColors": 0.0,
+                 "fast": 1,
+                 "bucket": 1}
 
 
 URL = 'http://localhost:1337/draw'
@@ -24,27 +35,27 @@ def windowopener():
 
         else:
 
-            #if googleImageing.get() == 1:
+            # if googleImageing.get() == 1:
             #    f = open('./server/config.json')
             #    data = json.load(f)
             #    #data = json.loads(data)
             #    platform = e2.get()
             #    print(platform)
             #    #print (data["paint"]["positions"])
-#
+            #
             #    maxSize = {
             #        "w": (data[platform]["positions"]["bottomright"]["x"] - data[platform]["positions"]["topleft"]["x"]) / float(e4.get()),
             #        "h": (data[platform]["positions"]["bottomright"]["y"] - data[platform]["positions"]["topleft"]["y"]) / float(e4.get())
             #    }
-#
+            #
             #    print(maxSize)
             #    google_crawler = GoogleImageCrawler(
             #        storage={'root_dir': './server/google images'})
             #    google_crawler.crawl(
             #        keyword=e1.get(), max_num=5, max_size=(maxSize["w"], maxSize["h"]))
-#
+            #
             #    image = './server/google images/000001.png'
-            #else:
+            # else:
             image = e1.get()
 
             f = open("./server/gui.json", "w")
@@ -59,7 +70,7 @@ def windowopener():
                 "totallines": float(num.get()),
                 "sortColors": box.get(),
                 "delayBetweenColors":  float(delay.get()),
-                "fast": float(resizing.get()),
+                "fast": resizing.get(),
                 "bucket": bucket.get()
             }, f)
             f.close()
@@ -87,15 +98,20 @@ def windowopener():
     num = tk.Entry(window)
     delay = tk.Entry(window)
 
+    s = open("./server/gui.json", "r")
+    data = json.load(s)
+
+    # print(data['image'])
+
     e1.insert(
-        0, 'https://cdn.discordapp.com/attachments/818941739535564811/825802466498576402/unknown.png')
-    e2.insert(0, 'skribbl')
-    e3.insert(0, '1')
-    e4.insert(0, '2')
-    e5.insert(0, '1')
-    e6.insert(0, '2')
-    num.insert(0, '999999')
-    delay.insert(0, '0')
+        0, data['image'])
+    e2.insert(0, data['platform'])
+    e3.insert(0, data['speed'])
+    e4.insert(0, data['oneLineIs'])
+    e5.insert(0, data['accuracy'])
+    e6.insert(0, data['ditherAccuracy'])
+    num.insert(0, data['totallines'])
+    delay.insert(0, data['delayBetweenColors'])
 
     e1.grid(row=9, column=1)
     e2.grid(row=0, column=1)
@@ -107,23 +123,20 @@ def windowopener():
     delay.grid(row=8, column=1)
 
     dithering = tk.IntVar()
-    dithering.set(False)
     tk.Checkbutton(window, text="Dither",
                    variable=dithering).grid(row=5, column=1)
     box = tk.IntVar()
-    box.set(True)
-    
-    tk.Checkbutton(window, text="Sort colors", variable=box).grid(row=5, column=0)
+
+    tk.Checkbutton(window, text="Sort colors",
+                   variable=box).grid(row=5, column=0)
 
     #googleImageing = tk.IntVar()
-    #tk.Checkbutton(window, text="Google imageing",
+    # tk.Checkbutton(window, text="Google imageing",
     #               variable=googleImageing).grid(row=10, column=1)
     resizing = tk.IntVar()
-    resizing.set(True)
     tk.Checkbutton(window, text="Fast mode",
                    variable=resizing).grid(row=6, column=0)
     bucket = tk.IntVar()
-    bucket.set(True)
     tk.Checkbutton(window, text="Bucket",
                    variable=bucket).grid(row=6, column=1)
 
@@ -132,6 +145,24 @@ def windowopener():
 
     button = tk.Button(window, text='Quit', fg="red", width=8, command=quit)
     button.grid(column=0)
+
+    if data['dither'] == 1:
+        dithering.set(True)
+    else:
+        dithering.set(False)
+
+    if data['sortColors'] == 1:
+        box.set(True)
+    else:
+        box.set(False)
+    if data['fast'] == 1:
+        resizing.set(True)
+    else:
+        resizing.set(False)
+    if data['bucket'] == 1:
+        bucket.set(True)
+    else:
+        bucket.set(False)
 
     window.mainloop()
 
