@@ -1,5 +1,5 @@
 server/aborting.json
-server/node_modules
+
 server/config.json
 server/gui.json
 *.png
