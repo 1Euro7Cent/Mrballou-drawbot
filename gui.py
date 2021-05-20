@@ -21,7 +21,7 @@ defaultValues = {"platform": "skribbl",
                  "bucket": 1}
 
 
-URL = 'http://localhost:1337/draw'
+URL = 'http://localhost:49152/draw'
 
 
 def windowopener():
