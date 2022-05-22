@@ -1,5 +1,3 @@
-server/aborting.json
 
-server/config.json
-server/gui.json
-*.png
+package-lock.json
+node_modules
