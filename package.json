@@ -26,6 +26,7 @@
   "homepage": "https://github.com/1Euro7Cent/Mrballou-drawbot#readme",
   "dependencies": {
     "express": "^4.18.1",
+    "imagemaxsize": "^0.0.2",
     "jimp": "^0.16.1",
     "multidither": "^1.0.0",
     "nearest-rgba": "^1.0.0",
