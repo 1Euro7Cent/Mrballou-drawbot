@@ -1,5 +1,6 @@
 const Jimp = require('jimp')
 const fs = require('fs')
+const { ColorPalette, FloydSteinbergDither } = require('multidither')
 
 const Config = require('./config/Config')
 const Positions = require('./config/Positions')
@@ -48,9 +49,16 @@ module.exports = class DrawManager {
 
         await resized.writeAsync(this.config.temp + 'resized.png')
 
-        // todo: add dither
+        // resized = await resized.rotate(42)
 
-        let instructions = this.instructionWriter.write(resized, positions, settings)
+        if (settings.data.dither) {
+
+            let colors = Object.keys(position.colors)
+            let dither = new FloydSteinbergDither(resized, new ColorPalette(colors))
+            img = dither.dither(this.config.temp + 'dithered.png')
+        }
+
+        let instructions = this.instructionWriter.write(img, positions, settings)
 
         // console.log(instructions)
         let pos = 0

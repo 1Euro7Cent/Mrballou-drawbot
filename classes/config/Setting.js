@@ -9,7 +9,8 @@ module.exports = class Setting extends BaseConfig {
             name: "paint",
             img: './img/test.png',
             dither: false,
-            distancing: 1
+            distancing: 1,
+            ignoreColors: ['#ffffff'],
         }
 
     }

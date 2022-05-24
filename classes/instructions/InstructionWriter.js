@@ -68,33 +68,40 @@ module.exports = class InstructionWriter {
 
         let lastColor = null
 
-        for (let y = 0; y < recolored.bitmap.height; y++) {
-            for (let x = 0; x < recolored.bitmap.width; x++) {
-                let numb = recolored.getPixelColor(x, y)
-                let rgba = Jimp.intToRGBA(numb)
-                let hex = rgbToHex(rgba)
+        for (let color in colors) {
 
-                if (!lastColor || hex !== lastColor) {
-                    lastColor = hex
-                    let pos = position.colors[hex]
-                    // console.log(pos)
-                    // console.log(hex)
+            if (settings.data.ignoreColors.includes(color)) continue
+
+
+            for (let y = 0; y < recolored.bitmap.height; y++) {
+                for (let x = 0; x < recolored.bitmap.width; x++) {
+                    let numb = recolored.getPixelColor(x, y)
+                    let rgba = Jimp.intToRGBA(numb)
+                    let hex = rgbToHex(rgba)
+
+                    if (color != hex) continue
+                    if (!lastColor || hex !== lastColor) {
+                        lastColor = hex
+                        let pos = position.colors[hex]
+                        // console.log(pos)
+                        // console.log(hex)
+                        let instruction = new DrawInstruction('DOT', {
+                            x1: pos.x,
+                            y1: pos.y,
+                        },
+                            "SET_COLOR")
+                        instructions.push(instruction)
+                    }
+
                     let instruction = new DrawInstruction('DOT', {
-                        x1: pos.x,
-                        y1: pos.y,
-                    },
-                        "SET_COLOR")
+                        x1: (x * this.settings.distancing) + position.topleft.x,
+                        y1: (y * this.settings.distancing) + position.topleft.y
+                    }, "DRAW_PIXEL")
                     instructions.push(instruction)
                 }
-
-                let instruction = new DrawInstruction('DOT', {
-                    x1: (x * this.settings.distancing) + position.topleft.x,
-                    y1: (y * this.settings.distancing) + position.topleft.y
-                }, "DRAW_PIXEL")
-                instructions.push(instruction)
             }
-        }
 
+        }
 
         // make shure EVERY draw instruction is in bounds
 
@@ -117,24 +124,7 @@ module.exports = class InstructionWriter {
 
         //remove any directly repeating set color instructions
 
-        /*
-        for (let i = 0; i < instructions.length; i++) {
-            if (instructions[i].comment.toLowerCase().includes('set')) {
-                for (let j = i + 1; j < instructions.length; j++) {
-                    if (instructions[j].comment.toLowerCase().includes('set')) {
-                        if (instructions[i].cords.x1 === instructions[j].cords.x1 &&
-                            instructions[i].cords.y1 === instructions[j].cords.y1) {
-                            instructions.splice(j, 1)
-                            j--
-                        }
-                    }
-                    else {
-                        break
-                    }
-                }
-            }
-        }
-        //*/
+
 
 
 
