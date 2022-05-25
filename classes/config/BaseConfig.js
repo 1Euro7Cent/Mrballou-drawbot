@@ -22,7 +22,7 @@ module.exports = class Config {
      */
     validateObjectTypes(obj1, obj2) {
         for (let key in obj1) {
-            if (typeof obj2[key] !== undefined) {
+            if (typeof obj2[key] != 'undefined') {
                 if (typeof obj1[key] == 'object') {
                     if (!this.validateObjectTypes(obj1[key], obj2[key])) {
                         return false

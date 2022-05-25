@@ -27,12 +27,21 @@ module.exports = class DrawManager {
 
         this.settings = settings.data
 
-
         /**
          * @type {Jimp}
          */
         // @ts-ignore
         let img = this.settings.img
+
+        // if base64 encode the image
+        if (this.settings.img.startsWith("data:image/")) {
+            let decode = Buffer.from(this.settings.img.split(',')[1], 'base64')
+            fs.writeFileSync(this.config.temp + 'decoded.png', decode)
+            // @ts-ignore
+            img = this.config.temp + 'decoded.png'
+        }
+
+
         if (typeof img === 'string') {
             img = await Jimp.read(img)
         }

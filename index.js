@@ -1,4 +1,5 @@
 const fs = require('fs')
+const express = require('express')
 
 const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
@@ -37,7 +38,26 @@ position.fromFile('./positions.json')
 position.save('./positions.json')
 
 
+let app = express()
+
+app.post('/draw', (req, res) => {
+    res.send()
+    // delete aborting file
+    if (fs.existsSync(config.temp + config.abortingFile)) {
+        fs.unlinkSync(config.temp + config.abortingFile)
+    }
+    console.log('got draw request')
+    setting.fromFile('./settings.json')
+    setting.save('./settings.json')
+    position.fromFile('./positions.json')
+    position.save('./positions.json')
+
+    drawManager.startDraw(setting, position)
+})
+
+app.listen(config.port, () => {
+    console.log(`listening on port ${config.port}`)
+})
 // console.log(positions)
-drawManager.startDraw(setting, position)
 
 
