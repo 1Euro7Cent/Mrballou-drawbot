@@ -52,6 +52,7 @@ app.post('/draw', (req, res) => {
     position.fromFile('./positions.json')
     position.save('./positions.json')
 
+
     drawManager.startDraw(setting, position)
 })
 

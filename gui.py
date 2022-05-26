@@ -140,7 +140,7 @@ def main(port):
 
 
 def onPress(key):
-    if key == keyboard.Key.esc:
+    if key == keyboard.Key.esc or key == config['abortKey']:
         print("Aborting")
         # create a new json file
         with open(path, 'w') as f:

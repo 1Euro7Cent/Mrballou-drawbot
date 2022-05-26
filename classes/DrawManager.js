@@ -58,6 +58,8 @@ module.exports = class DrawManager {
 
         await resized.writeAsync(this.config.temp + 'resized.png')
 
+        // let resized = img // to test stuff
+
         // resized = await resized.rotate(42)
 
         if (settings.data.dither) {
@@ -79,7 +81,7 @@ module.exports = class DrawManager {
                 }
                 pos = 0
             }
-            instruction.execute()
+            await instruction.execute()
             pos++
         }
 

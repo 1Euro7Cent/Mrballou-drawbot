@@ -88,16 +88,53 @@ module.exports = class InstructionWriter {
                         let instruction = new DrawInstruction('DOT', {
                             x1: pos.x,
                             y1: pos.y,
+                            delay: this.settings.delay + this.settings.colorDelay
                         },
                             "SET_COLOR")
                         instructions.push(instruction)
                     }
 
-                    let instruction = new DrawInstruction('DOT', {
-                        x1: (x * this.settings.distancing) + position.topleft.x,
-                        y1: (y * this.settings.distancing) + position.topleft.y
-                    }, "DRAW_PIXEL")
-                    instructions.push(instruction)
+                    if (this.settings.fast) {
+                        let pixels = 0
+                        let looping = true
+                        for (let fx = x; fx < recolored.bitmap.width && looping; fx++) {
+                            let fy = y
+
+                            let fnumb = recolored.getPixelColor(fx, fy)
+                            let frgba = Jimp.intToRGBA(fnumb)
+                            let fhex = rgbToHex(frgba)
+                            if (fhex == hex) {
+                                pixels++
+                            }
+                            else {
+                                let instruction = new DrawInstruction('DRAG', {
+                                    x1: (x * this.settings.distancing) + position.topleft.x,
+                                    y1: (y * this.settings.distancing) + position.topleft.y,
+
+                                    x2: (x * this.settings.distancing) + position.topleft.x + ((pixels - 1) * this.settings.distancing),
+                                    y2: (y * this.settings.distancing) + position.topleft.y,
+
+                                    delay: this.settings.delay,
+                                }, "DRAW_LINE")
+                                instructions.push(instruction)
+
+                                x = fx - 1
+                                looping = false
+                            }
+
+
+                        }
+
+
+                    }
+                    else {
+                        let instruction = new DrawInstruction('DOT', {
+                            x1: (x * this.settings.distancing) + position.topleft.x,
+                            y1: (y * this.settings.distancing) + position.topleft.y,
+                            delay: this.settings.delay
+                        }, "DRAW_PIXEL")
+                        instructions.push(instruction)
+                    }
                 }
             }
 
@@ -113,7 +150,23 @@ module.exports = class InstructionWriter {
                     instruction.cords.x2 < position.topleft.x || instruction.cords.x2 > position.bottomright.x ||
                     instruction.cords.y2 < position.topleft.y || instruction.cords.y2 > position.bottomright.y
                 ) {
-                    instruction.comment = 'OUT_OF_BOUNDS'
+
+                    if (instruction.type == 'DRAG') {
+                        instruction.cords.x2 = instruction.cords.x2 > position.bottomright.x ? position.bottomright.x : instruction.cords.x2
+                        instruction.cords.x2 = instruction.cords.x2 < position.topleft.x ? position.topleft.x : instruction.cords.x2
+
+                        instruction.cords.y2 = instruction.cords.y2 > position.bottomright.y ? position.bottomright.y : instruction.cords.y2
+                        instruction.cords.y2 = instruction.cords.y2 < position.topleft.y ? position.topleft.y : instruction.cords.y2
+
+                        instruction.cords.x1 = instruction.cords.x1 > position.bottomright.x ? position.bottomright.x : instruction.cords.x1
+                        instruction.cords.x1 = instruction.cords.x1 < position.topleft.x ? position.topleft.x : instruction.cords.x1
+
+                        instruction.cords.y1 = instruction.cords.y1 > position.bottomright.y ? position.bottomright.y : instruction.cords.y1
+                        instruction.cords.y1 = instruction.cords.y1 < position.topleft.y ? position.topleft.y : instruction.cords.y1
+                    }
+                    else {
+                        instruction.comment = 'OUT_OF_BOUNDS'
+                    }
                 }
             }
 

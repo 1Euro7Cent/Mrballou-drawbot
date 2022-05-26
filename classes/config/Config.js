@@ -8,7 +8,8 @@ module.exports = class Config extends BaseConfig {
             temp: './temp/',
             abortingFile: "aborting.json",
             port: 25600,
-            prettifyData: false
+            prettifyData: false,
+            abortKey: 'q'
         }
 
     }
