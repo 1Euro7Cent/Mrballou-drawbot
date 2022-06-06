@@ -5,6 +5,7 @@ const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
 const Setting = require('./classes/config/Setting')
 const Positions = require('./classes/config/Positions')
+const GuiConfig = require('./classes/config/GuiConfig')
 
 let config_ = new Config(undefined, true)
 config_.fromFile('./config.json')
@@ -27,7 +28,7 @@ if (!fs.existsSync(config.temp)) {
 
 }
 
-//todo: add gui to make these settings
+
 let setting = new Setting(undefined, config.prettifyData)
 setting.fromFile('./settings.json')
 setting.save('./settings.json')
@@ -36,6 +37,10 @@ let settings = setting.data
 let position = new Positions(undefined, config.prettifyData)
 position.fromFile('./positions.json')
 position.save('./positions.json')
+
+let guiConfig = new GuiConfig(undefined, config.prettifyData)
+guiConfig.fromFile('./guiConfig.json')
+guiConfig.save('./guiConfig.json')
 
 
 let app = express()

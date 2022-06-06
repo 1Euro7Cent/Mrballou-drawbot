@@ -1,15 +1,28 @@
-import sys
+from pynput import keyboard
 import tkinter as tk
 import json
 import multiprocessing
 import sys
 import requests
 import os
-from pynput import keyboard
 
 projectData = {}
 positionData = {}
 settingsData = {}
+guiData = {}
+
+sortColAlgs = [
+    "size 0-9",
+    "size 9-0",
+    "name A-Z",
+    "name Z-A",
+    "random",
+    "reverse"
+]
+
+ditherAlgs = [
+    "Floyd-Steinberg",
+]
 
 
 def getData(file):
@@ -18,6 +31,26 @@ def getData(file):
         with open(file, "r") as f:
             return json.load(f)
     return {}
+
+
+def getRC(data, name):
+    i = 0
+    j = 0
+    for row in data:
+        j = 0
+        for col in row:
+            if col == name:
+                return {
+                    "row": i,
+                    "col": j
+                }
+            j += 1
+        i += 1
+
+    return{
+        "row": -1,
+        "col": -1
+    }
 
 
 def getPlatforms(data):
@@ -41,6 +74,8 @@ def main(port):
             bucketVal.set(data['bucket'])
             maxLinesVal.set(data['maxLines'])
             colorDelayVal.set(data['colorDelay'])
+            sortColAlg.set(data['sortColAlg'])
+            ditherAlg.set(data['ditherAlg'])
         except KeyError:
             print("Error loading data")
         checkData()
@@ -84,6 +119,8 @@ def main(port):
             "bucket": bucketVal.get(),
             "maxLines": int(maxLinesVal.get()),
             "colorDelay": float(colorDelayVal.get()),
+            "sortColAlg": sortColAlg.get(),
+            "ditherAlg": ditherAlg.get()
         }
         return res
 
@@ -141,99 +178,149 @@ def main(port):
     projectData = getData("package.json")
     positionData = getData("positions.json")
     settingsData = getData("settings.json")
+    guiData = getData("guiConfig.json")
 
     root = tk.Tk()
     root.title(projectData['name'])
     # root.geometry('200x200')
 
+    pos = {
+        "row": -1,
+        "col": -1
+    }
     # setting platform to draw
 
-    tk.Label(root, text='Platform').grid(row=0, column=0)
+    pos = getRC(guiData, 'platformText')
+    tk.Label(root, text='PlatformText').grid(row=pos["row"], column=pos["col"])
     platform = tk.StringVar(root)
     platforms = getPlatforms(positionData)
     platformOpts = tk.OptionMenu(root, platform, *platforms)
-    platformOpts.grid(row=0, column=1)
+    pos = getRC(guiData, 'platform')
+    platformOpts.grid(row=pos["row"], column=pos["col"])
 
     # speed
+    pos = getRC(guiData, 'delayText')
     speedVal = tk.IntVar(root)
-    tk.Label(root, text='Delay').grid(row=1, column=0)
+    tk.Label(root, text='Delay').grid(row=pos["row"], column=pos["col"])
     speed = tk.Entry(root, textvariable=speedVal)
-    speed.grid(row=1, column=1)
+    pos = getRC(guiData, 'delay')
+    speed.grid(row=pos["row"], column=pos["col"])
 
     # distancing
+    pos = getRC(guiData, 'distanceText')
     distanceVal = tk.IntVar(root)
-    tk.Label(root, text='Distance').grid(row=2, column=0)
+    tk.Label(root, text='Distance').grid(row=pos["row"], column=pos["col"])
     distance = tk.Entry(root, textvariable=distanceVal)
-    distance.grid(row=2, column=1)
+    pos = getRC(guiData, 'distance')
+    distance.grid(row=pos["row"], column=pos["col"])
 
     # checkboxes
 
     # sort colors
+    pos = getRC(guiData, 'sortColors')
     sortVal = tk.BooleanVar()
     sort = tk.Checkbutton(root, text='Sort colors', variable=sortVal)
-    sort.grid(row=3, column=0)
+    sort.grid(row=pos["row"], column=pos["col"])
+
+    # color sort alg
+    pos = getRC(guiData, 'sortColorsAlgorithmText')
+    tk.Label(root, text='Sort colors alg').grid(
+        row=pos["row"], column=pos["col"])
+    sortColAlg = tk.StringVar(root)
+
+    sortColAlgOpts = tk.OptionMenu(root, sortColAlg, *sortColAlgs)
+    pos = getRC(guiData, 'sortColorsAlgorithm')
+    sortColAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # dither
+    pos = getRC(guiData, 'dither')
     ditherVal = tk.BooleanVar()
     dither = tk.Checkbutton(root, text='Dither', variable=ditherVal)
-    dither.grid(row=3, column=1)
+    dither.grid(row=pos["row"], column=pos["col"])
+
+    # dither alg
+    pos = getRC(guiData, 'ditherAlgorithmText')
+    tk.Label(root, text='dither alg').grid(
+        row=pos["row"], column=pos["col"])
+    ditherAlg = tk.StringVar(root)
+
+    ditherAlgOpts = tk.OptionMenu(root, ditherAlg, *ditherAlgs)
+    pos = getRC(guiData, 'ditherAlgorithm')
+    ditherAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # fast mode
+    pos = getRC(guiData, 'fastMode')
     fastVal = tk.BooleanVar()
     fast = tk.Checkbutton(root, text='Fast mode', variable=fastVal)
-    fast.grid(row=4, column=0)
+    fast.grid(row=pos["row"], column=pos["col"])
 
     # bucket
+    pos = getRC(guiData, 'bucket')
     bucketVal = tk.BooleanVar()
     bucket = tk.Checkbutton(root, text='Bucket', variable=bucketVal)
-    bucket.grid(row=4, column=1)
+    bucket.grid(row=pos["row"], column=pos["col"])
 
     # todo: dither algorithm
 
     # ignore color
     # todo: add check for valid color
     # todo: add to settings
-    tk.Label(root, text='Ignore color').grid(row=5, column=0)
+    pos = getRC(guiData, 'ignoreColorText')
+    tk.Label(root, text='Ignore color').grid(row=pos["row"], column=pos["col"])
     ignore = tk.Entry(root)
-    ignore.grid(row=5, column=1)
+    pos = getRC(guiData, 'ignoreColor')
+    ignore.grid(row=pos["row"], column=pos["col"])
 
     # max lines
+    pos = getRC(guiData, 'maxLinesText')
     maxLinesVal = tk.IntVar(root)
-    tk.Label(root, text='Max lines').grid(row=6, column=0)
+    tk.Label(root, text='Max lines').grid(row=pos["row"], column=pos["col"])
     maxLines = tk.Entry(root, textvariable=maxLinesVal)
-    maxLines.grid(row=6, column=1)
+    pos = getRC(guiData, 'maxLines')
+    maxLines.grid(row=pos["row"], column=pos["col"])
 
     # delay between colors
+    pos = getRC(guiData, 'colorDelayText')
     colorDelayVal = tk.IntVar(root)
-    tk.Label(root, text='Delay between colors').grid(row=7, column=0)
+    tk.Label(root, text='Delay between colors').grid(
+        row=pos["row"], column=pos["col"])
     colorDelay = tk.Entry(root, textvariable=colorDelayVal)
-    colorDelay.grid(row=7, column=1)
+    pos = getRC(guiData, 'colorDelay')
+    colorDelay.grid(row=pos["row"], column=pos["col"])
 
     # image
+    pos = getRC(guiData, 'imageUrlText')
     imageVal = tk.StringVar(root)
-    tk.Label(root, text='Image URL').grid(row=8, column=0)
+    tk.Label(root, text='Image URL').grid(row=pos["row"], column=pos["col"])
     image = tk.Entry(root, textvariable=imageVal)
-    image.grid(row=8, column=1)
+    pos = getRC(guiData, 'imageUrl')
+    image.grid(row=pos["row"], column=pos["col"])
 
     # draw button
-    tk.Button(root, text='Draw', command=startDraw).grid(row=9, column=1)
+    pos = getRC(guiData, 'drawButton')
+    tk.Button(root, text='Draw', command=startDraw).grid(
+        row=pos["row"], column=pos["col"])
 
     # save / load configurations
     # save
     # tk.Label(root, text='Save configuration').grid(row=10, column=0)
+    pos = getRC(guiData, 'saveConfigButton')
     saveVal = tk.StringVar(root)
     tk.Button(root, text='Save config',
-              command=saveConfig).grid(row=10, column=0)
+              command=saveConfig).grid(row=pos["row"], column=pos["col"])
     save = tk.Entry(root, textvariable=saveVal)
-    save.grid(row=10, column=1)
+    pos = getRC(guiData, 'saveConfig')
+    save.grid(row=pos["row"], column=pos["col"])
 
     # load
+    pos = getRC(guiData, 'loadConfigButton')
     tk.Button(root, text='Load config',
-              command=lambda: loadData(getSaveData(loadVal.get()))).grid(row=11, column=0)
+              command=lambda: loadData(getSaveData(loadVal.get()))).grid(row=pos["row"], column=pos["col"])
 
     loadVal = tk.StringVar(root)
     load = tk.OptionMenu(root, loadVal, *getSaves())
-    load.grid(row=11, column=1)
+    pos = getRC(guiData, 'loadConfig')
+    load.grid(row=pos["row"], column=pos["col"])
 
     # version
     version = tk.Label(root, text="Version: " + projectData["version"])
@@ -244,7 +331,7 @@ def main(port):
 
 
 def onPress(key):
-    if key == keyboard.Key.esc or key == config['abortKey']:
+    if key == keyboard.Key.esc or key == keyboard.KeyCode.from_char(config['abortKey']):
         print("Aborting")
         # create a new json file
         with open(path, 'w') as f:

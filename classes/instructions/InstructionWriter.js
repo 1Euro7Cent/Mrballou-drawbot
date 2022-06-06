@@ -56,8 +56,67 @@ module.exports = class InstructionWriter {
         recolored.write(this.config.temp + 'recolored.png')
         console.log(colors)
 
-        // todo: sort colors
 
+        if (this.settings.sortColors) {
+            let arr
+            switch (this.settings.sortColAlg) {
+                case "size 0-9":
+                    // sort by size smallest to largest
+                    arr = objToArr(colors)
+                    arr.sort((a, b) => {
+                        return a[1] - b[1]
+                    })
+                    colors = arrToObj(arr)
+                    break
+                case 'size 9-0':
+                    // sort by size largest to smallest
+                    arr = objToArr(colors)
+                    arr.sort((a, b) => {
+                        return b[1] - a[1]
+                    })
+                    colors = arrToObj(arr)
+                    break
+
+                case 'name A-Z':
+                    // sort by name alphabetically
+                    arr = objToArr(colors)
+                    arr.sort((a, b) => {
+                        return a[0] > b[0] ? 1 : -1
+                    })
+                    colors = arrToObj(arr)
+
+                    break
+
+                case 'name Z-A':
+                    // sort by name alphabetically
+                    arr = objToArr(colors)
+                    arr.sort((a, b) => {
+                        return a[0] < b[0] ? 1 : -1
+                    })
+                    colors = arrToObj(arr)
+                    break
+
+                case 'random':
+                    // shuffle colors
+                    arr = objToArr(colors)
+                    arr.sort(() => {
+                        return 0.5 - Math.random()
+                    })
+                    colors = arrToObj(arr)
+                    break
+
+                case 'reverse':
+                    // reverse colors
+                    arr = objToArr(colors)
+                    arr.reverse()
+                    colors = arrToObj(arr)
+                    break
+
+            }
+            console.log(colors)
+        }
+
+        // return
 
         // make first dot at topleft to make shure we are focused in the right window
 
@@ -68,6 +127,7 @@ module.exports = class InstructionWriter {
 
         let lastColor = null
 
+        console.log(`ignoring colors:`, settings.data.ignoreColors)
         for (let color in colors) {
 
             if (settings.data.ignoreColors.includes(color)) continue
@@ -185,6 +245,38 @@ module.exports = class InstructionWriter {
 
         return instructions
     }
+}
+
+/**
+ * @param {{}} obj
+ * @returns {any[]}
+ * @example
+ * let colors = {
+ * '#000000': 187,
+ * '#0000ff': 33,
+ * }
+ * objToArray(colors) => [
+ * ['#000000', 187],
+ * ['#0000ff', 33],
+ * ]
+ */
+function objToArr(obj) {
+    let arr = []
+    for (let key in obj) {
+        arr.push([key, obj[key]])
+    }
+    return arr
+}
+/**
+ * @param {[any, any][]} arr
+ */
+function arrToObj(arr) {
+    let obj = {}
+    for (let i = 0; i < arr.length; i++) {
+        let [key, value] = arr[i]
+        obj[key] = value
+    }
+    return obj
 }
 
 function rgbToHex(rgb) {
