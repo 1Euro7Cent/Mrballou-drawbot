@@ -75,7 +75,7 @@ module.exports = class DrawManager {
         let pos = 0
         for (let instruction of instructions) {
             // console.log(instruction)
-            if (pos % 100 === 0) {
+            if (pos % 10 === 0) {
                 if (fs.existsSync(this.config.temp + this.config.abortingFile)) {
                     break
                 }

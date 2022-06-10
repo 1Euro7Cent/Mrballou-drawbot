@@ -8,6 +8,11 @@ import sys
 filename = "positions.json"
 name = input("Please enter the name of the position preset: ")
 
+validBucket = False
+while not validBucket:
+    bucket = input("Has the position set a bucket? (y/n) ")
+    validBucket = bucket == "y" or bucket == "n"
+
 
 positions = {
     name: {
@@ -19,6 +24,14 @@ positions = {
             "x": 0,
             "y": 0
         },
+        "bucket": {
+            "x": -1,
+            "y": -1
+        },
+        "pen": {
+            "x": -1,
+            "y": -1
+        },
         "colors": {
 
         }
@@ -27,6 +40,9 @@ positions = {
 
 status = "topleft"
 listener = ''
+
+if bucket == "y":
+    status = "bucket"
 
 
 def rgbToHex(r, g, b):
@@ -53,11 +69,25 @@ def onClick(x, y, button, pressed):
             return
 
         # print("Click: " + str(x) + " " + str(y) +" " + str(button) + " " + str(pressed))
+        if status == "bucket":
+            positions[name]["bucket"]["x"] = x
+            positions[name]["bucket"]["y"] = y
+            status = "pen"
+            print('put the mouse at the tool that you want to use to draw and click')
+            return
+
+        if status == "pen":
+            positions[name]["pen"]["x"] = x
+            positions[name]["pen"]["y"] = y
+            status = "topleft"
+            print('put the mouse at the top left of the drawing canvas and click')
+            return
+
         if status == "topleft":
             positions[name]["topleft"]["x"] = x
             positions[name]["topleft"]["y"] = y
             status = "bottomright"
-            print('now at the bottom left')
+            print('now at the bottom right')
             return
 
         if status == "bottomright":
@@ -85,7 +115,10 @@ def main():
         listener = l
 
         print('you can abort that process by pressing right lick')
-        print('put the mouse at the top left of the drawing canvas and click')
+        if bucket == "y":
+            print('click on the bucket')
+        else:
+            print('put the mouse at the top left of the drawing canvas and click')
         l.join()
 
 

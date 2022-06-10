@@ -14,6 +14,7 @@ module.exports = class InstructionWriter {
         /**
          * @type {NearestColor}
          */
+        // @ts-ignore
         this.nc = null
     }
 
@@ -122,10 +123,55 @@ module.exports = class InstructionWriter {
 
         instructions.push(new DrawInstruction('DOT', {
             x1: position.topleft.x,
-            y1: position.topleft.y
+            y1: position.topleft.y,
+            delay: this.settings.delay
         }, 'INIT_WINDOW'))
 
         let lastColor = null
+        // bucket 
+
+        if (this.settings.bucket) {
+            if (position.bucket.x > 0 && position.bucket.y > 0 &&
+                position.pen.x > 0 && position.pen.y > 0) {
+
+
+                let largestColor = Object.keys(colors).reduce((a, b) => colors[a] > colors[b] ? a : b)
+
+                settings.data.ignoreColors = [largestColor]
+
+                instructions.push(new DrawInstruction('DOT', {
+                    x1: position.bucket.x,
+                    y1: position.bucket.y,
+                    delay: this.settings.delay
+                }, 'SEL_BUCKET'))
+
+                let colPos = position.colors[largestColor]
+                instructions.push(new DrawInstruction('DOT', {
+                    x1: colPos.x,
+                    y1: colPos.y,
+                    delay: this.settings.delay
+                }, 'SEL_BUCKET_COL'))
+
+                instructions.push(new DrawInstruction('DOT', {
+                    x1: position.topleft.x + this.settings.distancing,
+                    y1: position.topleft.y + this.settings.distancing,
+                    delay: this.settings.delay
+                }, 'DRAW_BUCKET'))
+
+                instructions.push(new DrawInstruction('DOT', {
+                    x1: position.pen.x,
+                    y1: position.pen.y,
+                    delay: this.settings.delay
+                }, 'SEL_PEN'))
+
+                lastColor = largestColor
+            }
+            else {
+                console.log("Bucket not found")
+            }
+        }
+
+
 
         console.log(`ignoring colors:`, settings.data.ignoreColors)
         for (let color in colors) {
@@ -157,8 +203,8 @@ module.exports = class InstructionWriter {
                     if (this.settings.fast) {
                         let pixels = 0
                         let looping = true
-                        for (let fx = x; fx < recolored.bitmap.width && looping; fx++) {
-                            let fy = y
+                        let fy = y
+                        for (let fx = x; looping; fx++) {
 
                             let fnumb = recolored.getPixelColor(fx, fy)
                             let frgba = Jimp.intToRGBA(fnumb)
@@ -167,19 +213,38 @@ module.exports = class InstructionWriter {
                                 pixels++
                             }
                             else {
-                                let instruction = new DrawInstruction('DRAG', {
-                                    x1: (x * this.settings.distancing) + position.topleft.x,
-                                    y1: (y * this.settings.distancing) + position.topleft.y,
 
-                                    x2: (x * this.settings.distancing) + position.topleft.x + ((pixels - 1) * this.settings.distancing),
-                                    y2: (y * this.settings.distancing) + position.topleft.y,
-
-                                    delay: this.settings.delay,
-                                }, "DRAW_LINE")
-                                instructions.push(instruction)
-
-                                x = fx - 1
+                                x = fx
                                 looping = false
+                            }
+
+                            // if (pixels <= 0) break
+
+                            looping = fx < recolored.bitmap.width && looping
+
+                            if (!looping) {
+
+                                if (pixels > 1) {
+                                    let instruction = new DrawInstruction('DRAG', {
+                                        x1: (x * this.settings.distancing) + position.topleft.x,
+                                        y1: (y * this.settings.distancing) + position.topleft.y,
+
+                                        x2: (x * this.settings.distancing) + position.topleft.x + ((pixels - 1) * this.settings.distancing),
+                                        y2: (y * this.settings.distancing) + position.topleft.y,
+
+                                        delay: this.settings.delay,
+                                    }, "DRAW_LINE")
+                                    instructions.push(instruction)
+                                }
+                                else {
+                                    instructions.push(new DrawInstruction('DOT', {
+                                        x1: (x * this.settings.distancing) + position.topleft.x,
+                                        y1: (y * this.settings.distancing) + position.topleft.y,
+                                        delay: this.settings.delay
+
+                                    }, "DRAW_PIXEL"))
+
+                                }
                             }
 
 
@@ -207,26 +272,31 @@ module.exports = class InstructionWriter {
                 if (instruction.cords.x1 < position.topleft.x || instruction.cords.x1 > position.bottomright.x ||
                     instruction.cords.y1 < position.topleft.y || instruction.cords.y1 > position.bottomright.y ||
 
+                    // @ts-ignore
                     instruction.cords.x2 < position.topleft.x || instruction.cords.x2 > position.bottomright.x ||
+                    // @ts-ignore
                     instruction.cords.y2 < position.topleft.y || instruction.cords.y2 > position.bottomright.y
                 ) {
+                    instruction.comment = 'OUT_OF_BOUNDS'
 
-                    if (instruction.type == 'DRAG') {
-                        instruction.cords.x2 = instruction.cords.x2 > position.bottomright.x ? position.bottomright.x : instruction.cords.x2
-                        instruction.cords.x2 = instruction.cords.x2 < position.topleft.x ? position.topleft.x : instruction.cords.x2
+                }
 
-                        instruction.cords.y2 = instruction.cords.y2 > position.bottomright.y ? position.bottomright.y : instruction.cords.y2
-                        instruction.cords.y2 = instruction.cords.y2 < position.topleft.y ? position.topleft.y : instruction.cords.y2
+                if (instruction.type == 'DRAG') {
+                    // @ts-ignore
+                    instruction.cords.x2 = instruction.cords.x2 > position.bottomright.x ? position.bottomright.x : instruction.cords.x2
+                    // @ts-ignore
+                    instruction.cords.x2 = instruction.cords.x2 < position.topleft.x ? position.topleft.x : instruction.cords.x2
 
-                        instruction.cords.x1 = instruction.cords.x1 > position.bottomright.x ? position.bottomright.x : instruction.cords.x1
-                        instruction.cords.x1 = instruction.cords.x1 < position.topleft.x ? position.topleft.x : instruction.cords.x1
+                    // @ts-ignore
+                    instruction.cords.y2 = instruction.cords.y2 > position.bottomright.y ? position.bottomright.y : instruction.cords.y2
+                    // @ts-ignore
+                    instruction.cords.y2 = instruction.cords.y2 < position.topleft.y ? position.topleft.y : instruction.cords.y2
 
-                        instruction.cords.y1 = instruction.cords.y1 > position.bottomright.y ? position.bottomright.y : instruction.cords.y1
-                        instruction.cords.y1 = instruction.cords.y1 < position.topleft.y ? position.topleft.y : instruction.cords.y1
-                    }
-                    else {
-                        instruction.comment = 'OUT_OF_BOUNDS'
-                    }
+                    instruction.cords.x1 = instruction.cords.x1 > position.bottomright.x ? position.bottomright.x : instruction.cords.x1
+                    instruction.cords.x1 = instruction.cords.x1 < position.topleft.x ? position.topleft.x : instruction.cords.x1
+
+                    instruction.cords.y1 = instruction.cords.y1 > position.bottomright.y ? position.bottomright.y : instruction.cords.y1
+                    instruction.cords.y1 = instruction.cords.y1 < position.topleft.y ? position.topleft.y : instruction.cords.y1
                 }
             }
 

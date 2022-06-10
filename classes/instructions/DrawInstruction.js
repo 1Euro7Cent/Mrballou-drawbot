@@ -22,10 +22,12 @@ module.exports = class DrawInstruction {
                 robot.mouseClick()
                 break
             case "DRAG":
-                robot.moveMouse(this.cords.x1, this.cords.y1)
-                robot.mouseToggle('down')
-                robot.moveMouse(this.cords.x2, this.cords.y2)
-                robot.mouseToggle('up')
+                if (this.cords.x2 && this.cords.y2) {
+                    robot.moveMouse(this.cords.x1, this.cords.y1)
+                    robot.mouseToggle('down')
+                    robot.moveMouse(this.cords.x2, this.cords.y2)
+                    robot.mouseToggle('up')
+                }
                 break
         }
         let delay = this.cords.delay ?? 0

@@ -9,7 +9,8 @@ module.exports = class Config extends BaseConfig {
             abortingFile: "aborting.json",
             port: 25600,
             prettifyData: false,
-            abortKey: 'q'
+            abortKey: 'q',
+
         }
 
     }

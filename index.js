@@ -53,6 +53,7 @@ app.post('/draw', (req, res) => {
     }
     console.log('got draw request')
     setting.fromFile('./settings.json')
+    setting.data.ignoreColors = ['#ffffff'] // for test purposes. will be removed later
     setting.save('./settings.json')
     position.fromFile('./positions.json')
     position.save('./positions.json')

@@ -16,6 +16,7 @@ module.exports = class Setting extends BaseConfig {
             colorDelay: 0,
             ignoreColors: ['#ffffff'],
             sortColAlg: "size incr",
+            bucket: false
         }
 
     }
