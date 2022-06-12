@@ -137,34 +137,37 @@ module.exports = class InstructionWriter {
 
                 let largestColor = Object.keys(colors).reduce((a, b) => colors[a] > colors[b] ? a : b)
 
-                settings.data.ignoreColors = [largestColor]
+                if (!settings.data.ignoreColors.includes(largestColor)) {
 
-                instructions.push(new DrawInstruction('DOT', {
-                    x1: position.bucket.x,
-                    y1: position.bucket.y,
-                    delay: this.settings.delay
-                }, 'SEL_BUCKET'))
+                    settings.data.ignoreColors = [largestColor]
 
-                let colPos = position.colors[largestColor]
-                instructions.push(new DrawInstruction('DOT', {
-                    x1: colPos.x,
-                    y1: colPos.y,
-                    delay: this.settings.delay
-                }, 'SEL_BUCKET_COL'))
+                    instructions.push(new DrawInstruction('DOT', {
+                        x1: position.bucket.x,
+                        y1: position.bucket.y,
+                        delay: this.settings.delay
+                    }, 'SEL_BUCKET'))
 
-                instructions.push(new DrawInstruction('DOT', {
-                    x1: position.topleft.x + this.settings.distancing,
-                    y1: position.topleft.y + this.settings.distancing,
-                    delay: this.settings.delay
-                }, 'DRAW_BUCKET'))
+                    let colPos = position.colors[largestColor]
+                    instructions.push(new DrawInstruction('DOT', {
+                        x1: colPos.x,
+                        y1: colPos.y,
+                        delay: this.settings.delay
+                    }, 'SEL_BUCKET_COL'))
 
-                instructions.push(new DrawInstruction('DOT', {
-                    x1: position.pen.x,
-                    y1: position.pen.y,
-                    delay: this.settings.delay
-                }, 'SEL_PEN'))
+                    instructions.push(new DrawInstruction('DOT', {
+                        x1: position.topleft.x + this.settings.distancing,
+                        y1: position.topleft.y + this.settings.distancing,
+                        delay: this.settings.delay
+                    }, 'DRAW_BUCKET'))
 
-                lastColor = largestColor
+                    instructions.push(new DrawInstruction('DOT', {
+                        x1: position.pen.x,
+                        y1: position.pen.y,
+                        delay: this.settings.delay
+                    }, 'SEL_PEN'))
+
+                    lastColor = largestColor
+                }
             }
             else {
                 console.log("Bucket not found")
@@ -214,7 +217,6 @@ module.exports = class InstructionWriter {
                             }
                             else {
 
-                                x = fx
                                 looping = false
                             }
 
@@ -245,6 +247,7 @@ module.exports = class InstructionWriter {
                                     }, "DRAW_PIXEL"))
 
                                 }
+                                x = fx
                             }
 
 
