@@ -131,7 +131,7 @@ module.exports = class InstructionWriter {
         // bucket 
 
         if (this.settings.bucket) {
-            if (position.bucket.x > 0 && position.bucket.y > 0 &&
+            if (position.bucket?.x > 0 && position.bucket?.y > 0 &&
                 position.pen.x > 0 && position.pen.y > 0) {
 
 

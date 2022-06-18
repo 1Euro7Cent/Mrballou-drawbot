@@ -4,7 +4,8 @@
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo Compiling node && pkg index.js -r ./classes/**/* -o ./dist/drawbot.exe --verbose && echo Compiling python && pyinstaller --onefile gui.py && pyinstaller --onefile initializePositions.py && echo Done! cleaning up... && del /s gui.spec initializePositions.spec && rmdir /s /q build && echo Done! executables are in dist/"
   },
   "repository": {
     "type": "git",
@@ -31,5 +32,8 @@
     "multidither": "^1.0.0",
     "nearest-rgba": "^1.0.0",
     "robotjs": "^0.6.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.7.0"
   }
 }

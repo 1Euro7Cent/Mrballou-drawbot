@@ -10,3 +10,10 @@ positions.json
 
 saves.json
 guiConfig.json
+
+# build stuff
+dist
+build
+*.exe
+
+*.spec
