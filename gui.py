@@ -1,10 +1,11 @@
 from pynput import keyboard
 import tkinter as tk
 import json
-import multiprocessing
+import threading
 import sys
 import requests
 import os
+import time
 
 projectData = {}
 positionData = {}
@@ -353,20 +354,23 @@ def keyboardListener():
 
 
 if __name__ == "__main__":
+    print("Starting")
 
-    guiThread = multiprocessing.Process(target=main, args=(config['port'],))
+    guiThread = threading.Thread(target=main, args=(config['port'],))
+    guiThread.daemon = True
     guiThread.start()
 
-    keyboardThread = multiprocessing.Process(target=keyboardListener)
+    keyboardThread = threading.Thread(target=keyboardListener)
+    keyboardThread.daemon = True
     keyboardThread.start()
 
     while True:
         if not guiThread.is_alive():
             print("GUI thread died... exiting")
-            keyboardThread.kill()
             sys.exit()
 
         if not keyboardThread.is_alive():
             print("keyboard thread died... exiting")
-            guiThread.kill()
             sys.exit()
+
+        time.sleep(1)

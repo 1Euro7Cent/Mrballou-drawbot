@@ -1,11 +1,11 @@
 {
   "name": "drawbot",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "echo Compiling node && pkg index.js -r ./classes/**/* -o ./dist/drawbot.exe --verbose && echo Compiling python && pyinstaller --onefile gui.py && pyinstaller --onefile initializePositions.py && echo Done! cleaning up... && del /s gui.spec initializePositions.spec && rmdir /s /q build && echo Done! executables are in dist/"
+    "build": "node build.js"
   },
   "repository": {
     "type": "git",
