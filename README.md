@@ -2,9 +2,17 @@
 
 If you have questions suggestions or bugs, please open an issue or send me a dm per dc(mrballou#9055)
 
-## installation
+## installation video:
 
-- goto releases
+[![placeholder](https://img.youtube.com/vi/3Js--QGcVpI/0.jpg)](https://youtu.be/3Js--QGcVpI)
+
+## Important!
+
+I forgot to mention in the video that you can abort the print by pressing the `esc` key or `q`(defineable in the config.json).
+
+## Installation
+
+- go to releases
 - download the latest release
 - extract the zip file into a folder
 - run the `drawbot.exe`
@@ -14,7 +22,7 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
 - run `gui.exe`
 - enjoy!
 
-## build
+## Build
 
 - clone repo
 - have [c++ build tools](https://visualstudio.microsoft.com/de/) installed
