@@ -1,6 +1,6 @@
 {
   "name": "drawbot",
-  "version": "3.3.2",
+  "version": "3.4.0",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
@@ -34,6 +34,7 @@
     "robotjs": "^0.6.0"
   },
   "devDependencies": {
+    "jszip": "^3.10.0",
     "pkg": "^5.7.0"
   }
 }
