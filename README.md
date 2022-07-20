@@ -8,7 +8,15 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
 
 ## Important!
 
-I forgot to mention in the video that you can abort the print by pressing the `esc` key or `q`(defineable in the config.json).
+- I forgot to mention in the video that you can abort the print by pressing the `esc` key or `q`(defineable in the config.json).
+
+- Read the tos from the website you want to draw on. If the website disallows such things don't draw with the bot on it.
+
+## Additional info:
+
+- When you install an update i recomend deleting `guiConfig.json`. That makes shure that the gui is being displayed correctly.
+
+- You can redising the gui by editing the `guiConfig.json` file. The order of the array displays the order of the gui elemments.
 
 ## Installation
 
@@ -25,11 +33,11 @@ I forgot to mention in the video that you can abort the print by pressing the `e
 ## Build
 
 - clone repo
-- have [c++ build tools](https://visualstudio.microsoft.com/de/) installed
+- have [c++ build tools](https://visualstudio.microsoft.com/en/) installed
 - have [python 3.10+](https://www.python.org/downloads/) installed
 - have [nodejs 16+](https://nodejs.org/en/) installed
-- install pip requirements (pip install -r requirements.txt)
-- install npm dependencies (npm install)
+- install pip requirements (`pip install -r requirements.txt`)
+- install npm dependencies (`npm install`)
 - to build run `npm run build`
 
 ## faq:

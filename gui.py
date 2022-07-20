@@ -121,7 +121,8 @@ def main(port):
             "maxLines": int(maxLinesVal.get()),
             "colorDelay": float(colorDelayVal.get()),
             "sortColAlg": sortColAlg.get(),
-            "ditherAlg": ditherAlg.get()
+            "ditherAlg": ditherAlg.get(),
+            "lineSaving": lineSavingVal.get()
         }
         return res
 
@@ -254,6 +255,13 @@ def main(port):
     fastVal = tk.BooleanVar()
     fast = tk.Checkbutton(root, text='Fast mode', variable=fastVal)
     fast.grid(row=pos["row"], column=pos["col"])
+
+    # line saving mode
+    pos = getRC(guiData, 'lineSavingMode')
+    lineSavingVal = tk.BooleanVar()
+    lineSaving = tk.Checkbutton(
+        root, text='Line saving mode', variable=lineSavingVal)
+    lineSaving.grid(row=pos["row"], column=pos["col"])
 
     # bucket
     pos = getRC(guiData, 'bucket')

@@ -33,6 +33,7 @@ module.exports = class DrawManager {
         // @ts-ignore
         let img = this.settings.img
 
+        console.time("total")
         // if base64 encode the image
         if (this.settings.img.startsWith("data:image/")) {
             let decode = Buffer.from(this.settings.img.split(',')[1], 'base64')
@@ -72,6 +73,7 @@ module.exports = class DrawManager {
         let instructions = this.instructionWriter.write(img, positions, settings)
 
         // console.log(instructions)
+        console.time("draw")
         let pos = 0
         for (let instruction of instructions) {
             // console.log(instruction)
@@ -85,7 +87,8 @@ module.exports = class DrawManager {
             pos++
         }
 
-        console.log('done')
+        console.timeEnd("draw")
+        console.timeEnd("total")
 
 
     }

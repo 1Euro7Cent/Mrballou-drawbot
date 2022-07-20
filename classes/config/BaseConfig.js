@@ -77,7 +77,7 @@ module.exports = class Config {
     /**
      * @param {fs.PathOrFileDescriptor} file
      */
-    save(file,) {
-        fs.writeFileSync(file, JSON.stringify(this.data, null, this.prettify ? 2 : null))
+    save(file) {
+        fs.writeFileSync(file, JSON.stringify(this.data, null, this.prettify ? 2 : undefined))
     }
 }

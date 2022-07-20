@@ -55,7 +55,7 @@ module.exports = class InstructionWriter {
         }
 
         recolored.write(this.config.temp + 'recolored.png')
-        console.log(colors)
+        // console.log(colors)
 
 
         if (this.settings.sortColors) {
@@ -114,7 +114,7 @@ module.exports = class InstructionWriter {
                     break
 
             }
-            console.log(colors)
+            // console.log(colors)
         }
 
         // return
@@ -177,9 +177,16 @@ module.exports = class InstructionWriter {
 
 
         console.log(`ignoring colors:`, settings.data.ignoreColors)
+        console.log("writing instructions...")
+        console.time("write")
         for (let color in colors) {
 
             if (settings.data.ignoreColors.includes(color)) continue
+            /**
+             * this variable stores pixels already drawn to not waste time on drawing them again
+             * @type {string[]}
+             */
+            let drawnPixels = []
 
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
@@ -204,16 +211,33 @@ module.exports = class InstructionWriter {
                     }
 
                     if (this.settings.fast) {
-                        let pixels = 0
                         let looping = true
                         let fy = y
+                        let fx = x
+                        let xPixels = 0
+                        let yPixels = 0
+
+                        let foundPixels = drawnPixels.find((p) => {
+                            let [xS, yS] = p.split(",")
+                            let [x1, x2] = xS.split("-")
+                            let [y1, y2] = yS.split("-")
+
+
+
+                            // check if x and y is in range
+                            return isInRange(x, x1, x2,) && isInRange(y, y1, y2)
+
+                        })
+
+                        if (this.settings.lineSaving && typeof foundPixels != 'undefined') continue
+
                         for (let fx = x; looping; fx++) {
 
                             let fnumb = recolored.getPixelColor(fx, fy)
                             let frgba = Jimp.intToRGBA(fnumb)
                             let fhex = rgbToHex(frgba)
                             if (fhex == hex) {
-                                pixels++
+                                xPixels++
                             }
                             else {
 
@@ -223,43 +247,88 @@ module.exports = class InstructionWriter {
                             // if (pixels <= 0) break
 
                             looping = fx < recolored.bitmap.width && looping
-
-                            if (!looping) {
-
-                                if (pixels > 1) {
-                                    let instruction = new DrawInstruction('DRAG', {
-                                        x1: (x * this.settings.distancing) + position.topleft.x,
-                                        y1: (y * this.settings.distancing) + position.topleft.y,
-
-                                        x2: (x * this.settings.distancing) + position.topleft.x + ((pixels - 1) * this.settings.distancing),
-                                        y2: (y * this.settings.distancing) + position.topleft.y,
-
-                                        delay: this.settings.delay,
-                                    }, "DRAW_LINE")
-                                    instructions.push(instruction)
+                            if ((!this.settings.lineSaving) && (!looping)) {
+                                if (xPixels > 1) {
+                                    let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                    let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
+                                    instructions.push(new DrawInstruction('DRAG', {
+                                        x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
+                                    }, "DRAW_LINE"))
                                 }
                                 else {
+                                    let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                     instructions.push(new DrawInstruction('DOT', {
-                                        x1: (x * this.settings.distancing) + position.topleft.x,
-                                        y1: (y * this.settings.distancing) + position.topleft.y,
-                                        delay: this.settings.delay
-
+                                        x1: pos.x, y1: pos.y, delay: this.settings.delay
                                     }, "DRAW_PIXEL"))
 
                                 }
                                 x = fx
-                            }
 
+                            }
 
                         }
 
+                        if (this.settings.lineSaving) {
+                            looping = true
+                            for (let fy = y; looping; fy++) {
+
+                                let fnumb = recolored.getPixelColor(fx, fy)
+                                let frgba = Jimp.intToRGBA(fnumb)
+                                let fhex = rgbToHex(frgba)
+                                if (fhex == hex) {
+                                    yPixels++
+                                }
+                                else {
+
+                                    looping = false
+                                }
+
+                                // if (pixels <= 0) break
+
+                                looping = fy < recolored.bitmap.height && looping
+                            }
+                            let largest = Math.max(xPixels, yPixels)
+                            if (largest > 1) {
+                                if (xPixels >= yPixels) {
+                                    // draw x
+                                    let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                    let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
+                                    instructions.push(new DrawInstruction('DRAG', {
+                                        x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
+                                    }, "DRAW_LINE"))
+
+
+                                    drawnPixels.push(`${x}-${x + (xPixels - 1)},${y}-${y}`)
+                                    // addLTodrawn(instructions, drawnPixels)
+
+
+                                }
+                                else {
+                                    // draw y
+                                    let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                    let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, yPixels - 1)
+                                    instructions.push(new DrawInstruction('DRAG', {
+                                        x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
+                                    }, "DRAW_LINE"))
+
+                                    // addLTodrawn(instructions, drawnPixels)
+                                    drawnPixels.push(`${x}-${x},${y}-${y + (yPixels - 1)}`)
+                                }
+                            }
+                            else {
+                                let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                instructions.push(new DrawInstruction('DOT', {
+                                    x1: pos.x, y1: pos.y, delay: this.settings.delay
+                                }, "DRAW_PIXEL"))
+                            }
+
+                        }
 
                     }
                     else {
+                        let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                         let instruction = new DrawInstruction('DOT', {
-                            x1: (x * this.settings.distancing) + position.topleft.x,
-                            y1: (y * this.settings.distancing) + position.topleft.y,
-                            delay: this.settings.delay
+                            x1: pos.x, y1: pos.y, delay: this.settings.delay
                         }, "DRAW_PIXEL")
                         instructions.push(instruction)
                     }
@@ -267,6 +336,9 @@ module.exports = class InstructionWriter {
             }
 
         }
+        console.log(`Done! Created ${instructions.length} instructions.`)
+        // console.timeLog()
+        console.timeEnd('write')
 
         // make shure EVERY draw instruction is in bounds
 
@@ -284,7 +356,7 @@ module.exports = class InstructionWriter {
 
                 }
 
-                if (instruction.type == 'DRAG') {
+                if (instruction.type == 'DRAG' || instruction.type == 'DRAGNOTRELEASE') {
                     // @ts-ignore
                     instruction.cords.x2 = instruction.cords.x2 > position.bottomright.x ? position.bottomright.x : instruction.cords.x2
                     // @ts-ignore
@@ -308,17 +380,51 @@ module.exports = class InstructionWriter {
         // remove every out of bounds
         instructions = instructions.filter(i => i.comment !== 'OUT_OF_BOUNDS')
 
-        //remove any directly repeating set color instructions
-
-
-
-
-
-
 
         return instructions
     }
 }
+
+/**
+ * @param {DrawInstruction[]} instructions
+ * @param {string[]} drawnPixels
+ */
+// @ts-ignore
+function addLTodrawn(instructions, drawnPixels) {
+    drawnPixels.push(`${instructions[instructions.length - 1].cords.x1}-${instructions[instructions.length - 1].cords.x2 ?? 0},${instructions[instructions.length - 1].cords.y1}-${instructions[instructions.length - 1].cords.y2 ?? 0}`)
+
+}
+
+/**
+ * @param {string | number} value
+ * @param {string | number} min
+ * @param {string | number} max
+ * @returns {boolean}
+ */
+function isInRange(value, min, max) {
+    if (typeof value !== 'number') value = parseInt(value)
+    if (typeof min !== 'number') min = parseInt(min)
+    if (typeof max !== 'number') max = parseInt(max)
+
+    return value >= min && value <= max
+}
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {{ topleft: { x: number; y: number; }; }} position
+ * @param {number} distancing
+ * @param {number} xModifyer
+ * @param {number} yModifyer
+ */
+function relativeToAbsolute(x, y, position, distancing, xModifyer, yModifyer) {
+    return {
+        x: (x * distancing) + position.topleft.x + (xModifyer * distancing),
+        y: (y * distancing) + position.topleft.y + (yModifyer * distancing)
+    }
+
+}
+
 
 /**
  * @param {{}} obj
