@@ -18,6 +18,8 @@ module.exports = class Setting extends BaseConfig {
             sortColAlg: "size 0-9",
             bucket: false,
             lineSaving: false,
+            onTimeDelay: false,
+            onTimeDelayMultiplyer: 1,
         }
 
     }

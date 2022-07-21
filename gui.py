@@ -77,6 +77,9 @@ def main(port):
             colorDelayVal.set(data['colorDelay'])
             sortColAlg.set(data['sortColAlg'])
             ditherAlg.set(data['ditherAlg'])
+            lineSavingVal.set(data['lineSaving'])
+            onTimeDelayMultiplyerVal.set(data['onTimeDelayMultiplyer'])
+            onTimeDelayVal.set(data['onTimeDelay'])
         except KeyError:
             print("Error loading data")
         checkData()
@@ -122,7 +125,9 @@ def main(port):
             "colorDelay": float(colorDelayVal.get()),
             "sortColAlg": sortColAlg.get(),
             "ditherAlg": ditherAlg.get(),
-            "lineSaving": lineSavingVal.get()
+            "lineSaving": lineSavingVal.get(),
+            "onTimeDelayMultiplyer": float(onTimeDelayMultiplyerVal.get()),
+            "onTimeDelay": onTimeDelayVal.get()
         }
         return res
 
@@ -202,7 +207,7 @@ def main(port):
 
     # speed
     pos = getRC(guiData, 'delayText')
-    speedVal = tk.IntVar(root)
+    speedVal = tk.StringVar(root)
     tk.Label(root, text='Delay').grid(row=pos["row"], column=pos["col"])
     speed = tk.Entry(root, textvariable=speedVal)
     pos = getRC(guiData, 'delay')
@@ -210,7 +215,7 @@ def main(port):
 
     # distancing
     pos = getRC(guiData, 'distanceText')
-    distanceVal = tk.IntVar(root)
+    distanceVal = tk.StringVar(root)
     tk.Label(root, text='Distance').grid(row=pos["row"], column=pos["col"])
     distance = tk.Entry(root, textvariable=distanceVal)
     pos = getRC(guiData, 'distance')
@@ -263,6 +268,23 @@ def main(port):
         root, text='Line saving mode', variable=lineSavingVal)
     lineSaving.grid(row=pos["row"], column=pos["col"])
 
+    # on time delay
+    pos = getRC(guiData, 'onTimeDelayMode')
+    onTimeDelayVal = tk.BooleanVar()
+    onTimeDelay = tk.Checkbutton(
+        root, text="on time delay mode", variable=onTimeDelayVal)
+    onTimeDelay.grid(row=pos["row"], column=pos["col"])
+
+    # on time delay threshold
+    pos = getRC(guiData, 'onTimeDelayText')
+    onTimeDelayMultiplyerVal = tk.StringVar(root)
+    tk.Label(root, text='On time delay multiplyer').grid(
+        row=pos["row"], column=pos["col"])
+    onTimeDelayMultiplyer = tk.Entry(
+        root, textvariable=onTimeDelayMultiplyerVal)
+    pos = getRC(guiData, 'onTimeDelayMultiplyer')
+    onTimeDelayMultiplyer.grid(row=pos["row"], column=pos["col"])
+
     # bucket
     pos = getRC(guiData, 'bucket')
     bucketVal = tk.BooleanVar()
@@ -290,7 +312,7 @@ def main(port):
 
     # delay between colors
     pos = getRC(guiData, 'colorDelayText')
-    colorDelayVal = tk.IntVar(root)
+    colorDelayVal = tk.StringVar(root)
     tk.Label(root, text='Delay between colors').grid(
         row=pos["row"], column=pos["col"])
     colorDelay = tk.Entry(root, textvariable=colorDelayVal)

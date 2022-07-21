@@ -42,9 +42,26 @@ module.exports = class DrawManager {
             img = this.config.temp + 'decoded.png'
         }
 
+        // @ts-ignore
+        if (typeof img == "string" && !img.startsWith("http")) {
+            if (!fs.existsSync(img)) {
+                console.error("Image not found: " + img)
+                return
+            }
 
-        if (typeof img === 'string') {
-            img = await Jimp.read(img)
+        }
+
+
+        if (typeof img == 'string') {
+
+            try {
+                img = await Jimp.read(img)
+            }
+            catch (e) {
+                console.error(e)
+                console.timeEnd("total")
+                return
+            }
         }
 
         let position = positions.getPlatform(this.settings.name)

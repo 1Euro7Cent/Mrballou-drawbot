@@ -380,6 +380,19 @@ module.exports = class InstructionWriter {
         // remove every out of bounds
         instructions = instructions.filter(i => i.comment !== 'OUT_OF_BOUNDS')
 
+        // add onTimeDelay to all instructions
+
+        if (this.settings.onTimeDelay) {
+            for (let i = 0; i < instructions.length; i++) {
+                let instruction = instructions[i]
+                if (instruction.cords.delay) {
+                    instruction.cords.delay += this.settings.onTimeDelayMultiplyer * i
+                }
+
+
+            }
+        }
+
 
         return instructions
     }

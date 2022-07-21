@@ -1,6 +1,6 @@
 {
   "name": "drawbot",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
