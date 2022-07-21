@@ -1,35 +1,45 @@
-# Drawbot for skribbl.io, gartic phone ect
+## This is a beta!
 
-## Requirements
-+ Python 3.9
-+ Requests - `pip install requests`
-+ pynput - `pip install pynput`
+If you have questions suggestions or bugs, please open an issue or send me a dm per dc(mrballou#9055)
 
-## Initialitation
-Video (outdated. making a new soon)(click image below)\
-[![placeholder](https://img.youtube.com/vi/L3-oa-rd4gA/0.jpg)](https://youtu.be/L3-oa-rd4gA) \
- Go in the "server" directory and double click the `initialisation.exe`\
- in there you need to type the game e.g.: `skribbl`. 
-#### IMPORTANT 
- FIRST hover over the pen tool.
- Then over the fill tool
- and then hover over all possible colors.
- After you done that just quickly go in the command prompt and press CTRL + c.\
- if the server was running please restart the server
+## installation video:
 
+[![placeholder](https://img.youtube.com/vi/3Js--QGcVpI/0.jpg)](https://youtu.be/3Js--QGcVpI)
 
+## Important!
 
-## Running
-just double-click the `startAll.bat` file and then a few cmd's and the GUI will pop up. 
+- I forgot to mention in the video that you can abort the print by pressing the `esc` key or `q`(defineable in the config.json).
 
-In the GUI you can set everything up. Feel free to figure out what witch function does. \
-After you pressed draw dont move the mouse anymore unless the script finished
+- Read the tos from the website you want to draw on. If the website disallows such things don't draw with the bot on it.
 
-If you somehow mess things up you can terminate the drawing by pressing `ESC`
+## Additional info:
 
-## Additional information
-You can start the server in debug mode to see a lot more (helpfull to see errors).
-to do that just run `startServerInDebug.bat`\
-in the `Image URL` field you can put a file path in there. Note the path starts at the main folder\
-The `Delay between colors` value is in milliseconds   
-Any errors will go to the console where it says `listining on 1337`. e.g.: `invalid image`
+- When you install an update i recomend deleting `guiConfig.json`. That makes shure that the gui is being displayed correctly.
+
+- You can redising the gui by editing the `guiConfig.json` file. The order of the array displays the order of the gui elemments.
+
+## Installation
+
+- go to releases
+- download the latest release
+- extract the zip file into a folder
+- run the `drawbot.exe`
+- close the window again
+- run `initializePositions.exe` and follow the instructions (abort/save with right click)
+- run `drawbot.exe` again
+- run `gui.exe`
+- enjoy!
+
+## Build
+
+- clone repo
+- have [c++ build tools](https://visualstudio.microsoft.com/en/) installed
+- have [python 3.10+](https://www.python.org/downloads/) installed
+- have [nodejs 16+](https://nodejs.org/en/) installed
+- install pip requirements (`pip install -r requirements.txt`)
+- install npm dependencies (`npm install`)
+- to build run `npm run build`
+
+## faq:
+
+- If the gui instantly crashes, try running the drawbot.exe and then the gui. The drawbot.exe creates all nessesery files for the gui to work.

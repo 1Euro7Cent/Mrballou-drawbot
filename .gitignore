@@ -1,5 +1,19 @@
-server/aborting.json
+node_modules
+config.json
+temp
+pnpm-lock.yaml
 
-server/config.json
-server/gui.json
-*.png
+settings.json
+positions.json
+.vscode
+
+saves.json
+guiConfig.json
+
+# build stuff
+dist
+build
+*.exe
+
+*.spec
+*.zip

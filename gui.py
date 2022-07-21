@@ -1,183 +1,384 @@
+from pynput import keyboard
 import tkinter as tk
-import requests
 import json
 import threading
-import pynput
-from pynput.keyboard import Key, Listener
-#from icrawler.builtin import GoogleImageCrawler
+import sys
+import requests
 import os
-#from PIL import ImageTk, Image
-defaultValues = {"platform": "skribbl",
-                 "image": "https://cdn.discordapp.com/attachments/818941739535564811/825802466498576402/unknown.png",
-                 "speed": 1.0,
-                 "oneLineIs": 2.0,
-                 "accuracy": 1.0,
-                 "dither": 0,
-                 "ditherAccuracy": 2.0,
-                 "totallines": 999999.0,
-                 "sortColors": 1,
-                 "delayBetweenColors": 0.0,
-                 "fast": 1,
-                 "bucket": 1}
+import time
+
+projectData = {}
+positionData = {}
+settingsData = {}
+guiData = {}
+
+sortColAlgs = [
+    "size 0-9",
+    "size 9-0",
+    "name A-Z",
+    "name Z-A",
+    "random",
+    "reverse"
+]
+
+ditherAlgs = [
+    "Floyd-Steinberg",
+]
 
 
-URL = 'http://localhost:49152/draw'
+def getData(file):
+    print('reading data from ' + file)
+    if os.path.exists(file):
+        with open(file, "r") as f:
+            return json.load(f)
+    return {}
 
 
-def windowopener():
+def getRC(data, name):
+    i = 0
+    j = 0
+    for row in data:
+        j = 0
+        for col in row:
+            if col == name:
+                return {
+                    "row": i,
+                    "col": j
+                }
+            j += 1
+        i += 1
 
-    def draw():
-        if e1.get() == '' or e1.get() == '' or e2.get() == '' or e3.get() == '' or e4.get() == '' or e5.get() == '' or e6.get() == '' or num.get == '':
-
-            w = tk.Label(
-                window, text="ERROR! at least one value is empty", fg='red')
-            w.grid(column=1)
-
-        else:
-
-            # if googleImageing.get() == 1:
-            #    f = open('./server/config.json')
-            #    data = json.load(f)
-            #    #data = json.loads(data)
-            #    platform = e2.get()
-            #    print(platform)
-            #    #print (data["paint"]["positions"])
-            #
-            #    maxSize = {
-            #        "w": (data[platform]["positions"]["bottomright"]["x"] - data[platform]["positions"]["topleft"]["x"]) / float(e4.get()),
-            #        "h": (data[platform]["positions"]["bottomright"]["y"] - data[platform]["positions"]["topleft"]["y"]) / float(e4.get())
-            #    }
-            #
-            #    print(maxSize)
-            #    google_crawler = GoogleImageCrawler(
-            #        storage={'root_dir': './server/google images'})
-            #    google_crawler.crawl(
-            #        keyword=e1.get(), max_num=5, max_size=(maxSize["w"], maxSize["h"]))
-            #
-            #    image = './server/google images/000001.png'
-            # else:
-            image = e1.get()
-
-            f = open("./server/gui.json", "w")
-            json.dump({
-                "platform": e2.get(),
-                "image": image,
-                "speed": float(e3.get()),
-                "oneLineIs": float(e4.get()),
-                "accuracy": float(e5.get()),
-                "dither": dithering.get(),
-                "ditherAccuracy": float(e6.get()),
-                "totallines": float(num.get()),
-                "sortColors": box.get(),
-                "delayBetweenColors":  float(delay.get()),
-                "fast": resizing.get(),
-                "bucket": bucket.get()
-            }, f)
-            f.close()
-            requests.get(url=URL, params={})
-
-    window = tk.Tk()
-
-    window.title('Drawbot by mrballou')
-
-    tk.Label(window, text="platform").grid(row=0)
-    tk.Label(window, text="speed").grid(row=1)
-    tk.Label(window, text="one line is").grid(row=2)
-    tk.Label(window, text="accuracy").grid(row=3)
-    tk.Label(window, text="ditherAccuracy").grid(row=4)
-    tk.Label(window, text="total lines").grid(row=7)
-    tk.Label(window, text="Delay between colors").grid(row=8)
-    tk.Label(window, text="Image URL").grid(row=9)
-
-    e1 = tk.Entry(window)
-    e2 = tk.Entry(window)
-    e3 = tk.Entry(window)
-    e4 = tk.Entry(window)
-    e5 = tk.Entry(window)
-    e6 = tk.Entry(window)
-    num = tk.Entry(window)
-    delay = tk.Entry(window)
-
-    s = open("./server/gui.json", "r")
-    data = json.load(s)
-
-    # print(data['image'])
-
-    e1.insert(
-        0, data['image'])
-    e2.insert(0, data['platform'])
-    e3.insert(0, data['speed'])
-    e4.insert(0, data['oneLineIs'])
-    e5.insert(0, data['accuracy'])
-    e6.insert(0, data['ditherAccuracy'])
-    num.insert(0, data['totallines'])
-    delay.insert(0, data['delayBetweenColors'])
-
-    e1.grid(row=9, column=1)
-    e2.grid(row=0, column=1)
-    e3.grid(row=1, column=1)
-    e4.grid(row=2, column=1)
-    e5.grid(row=3, column=1)
-    e6.grid(row=4, column=1)
-    num.grid(row=7, column=1)
-    delay.grid(row=8, column=1)
-
-    dithering = tk.IntVar()
-    tk.Checkbutton(window, text="Dither",
-                   variable=dithering).grid(row=5, column=1)
-    box = tk.IntVar()
-
-    tk.Checkbutton(window, text="Sort colors",
-                   variable=box).grid(row=5, column=0)
-
-    #googleImageing = tk.IntVar()
-    # tk.Checkbutton(window, text="Google imageing",
-    #               variable=googleImageing).grid(row=10, column=1)
-    resizing = tk.IntVar()
-    tk.Checkbutton(window, text="Fast mode",
-                   variable=resizing).grid(row=6, column=0)
-    bucket = tk.IntVar()
-    tk.Checkbutton(window, text="Bucket",
-                   variable=bucket).grid(row=6, column=1)
-
-    button = tk.Button(window, text='Draw', width=5, command=draw)
-    button.grid(column=1)
-
-    button = tk.Button(window, text='Quit', fg="red", width=8, command=quit)
-    button.grid(column=0)
-
-    if data['dither'] == 1:
-        dithering.set(True)
-    else:
-        dithering.set(False)
-
-    if data['sortColors'] == 1:
-        box.set(True)
-    else:
-        box.set(False)
-    if data['fast'] == 1:
-        resizing.set(True)
-    else:
-        resizing.set(False)
-    if data['bucket'] == 1:
-        bucket.set(True)
-    else:
-        bucket.set(False)
-
-    window.mainloop()
+    return{
+        "row": -1,
+        "col": -1
+    }
 
 
-x = threading.Thread(target=windowopener, args=())
-x.start()
+def getPlatforms(data):
+    res = []
+    for platform in data:
+        res.append(platform)
+    return res
 
 
-def on_release(key):
-    if key == Key.esc:
-        print('ESC pressed. Aborting print')
-        f = open("./server/aborting.json", "w")
-        f.close()
-        # quit()
+def main(port):
+
+    def loadData(data):
+        try:
+            platform.set(data['name'])
+            imageVal.set(data['img'])
+            speedVal.set(data['delay'])
+            distanceVal.set(data['distancing'])
+            sortVal.set(data['sortColors'])
+            ditherVal.set(data['dither'])
+            fastVal.set(data['fast'])
+            bucketVal.set(data['bucket'])
+            maxLinesVal.set(data['maxLines'])
+            colorDelayVal.set(data['colorDelay'])
+            sortColAlg.set(data['sortColAlg'])
+            ditherAlg.set(data['ditherAlg'])
+        except KeyError:
+            print("Error loading data")
+        checkData()
+        print('data loaded')
+
+    def checkData():
+        try:
+            if speedVal.get() == '':
+                speedVal.set(1)
+        except tk.TclError:
+            speedVal.set(1)
+
+        try:
+            if distanceVal.get() == '':
+                distanceVal.set(1)
+        except tk.TclError:
+            distanceVal.set(1)
+
+        try:
+            if maxLinesVal.get() == '':
+                maxLinesVal.set(999999)
+        except tk.TclError:
+            maxLinesVal.set(999999)
+
+        try:
+            if colorDelayVal.get() == '':
+                colorDelayVal.set(1)
+        except tk.TclError:
+            colorDelayVal.set(1)
+
+    def combineData():
+        checkData()
+        res = {
+            "name": platform.get(),
+            "img": imageVal.get(),
+            "delay": float(speedVal.get()),
+            "distancing": float(distanceVal.get()),
+            "sortColors": sortVal.get(),
+            "dither": ditherVal.get(),
+            "fast": fastVal.get(),
+            "bucket": bucketVal.get(),
+            "maxLines": int(maxLinesVal.get()),
+            "colorDelay": float(colorDelayVal.get()),
+            "sortColAlg": sortColAlg.get(),
+            "ditherAlg": ditherAlg.get(),
+            "lineSaving": lineSavingVal.get()
+        }
+        return res
+
+    def saveConfig():
+        print('saving configuration')
+        data = combineData()
+        name = saveVal.get()
+
+        if name == '':
+            print('no name given')
+            return
+
+        jsonData = {}
+        if os.path.exists('saves.json'):
+            with open('saves.json', 'r') as f:
+                jsonData = json.load(f)
+
+        jsonData[name] = data
+
+        with open('saves.json', 'w') as f:
+            json.dump(jsonData, f)
+        saveVal.set('')
+
+        # todo: update content of option menu to load new save/config
+
+    def getSaves():
+        print('getting saves')
+        saves = []
+        if os.path.exists('saves.json'):
+            with open('saves.json', 'r') as f:
+                jsonData = json.load(f)
+                for key in jsonData:
+                    saves.append(key)
+        if len(saves) == 0:
+            saves.append('')
+        return saves
+
+    def getSaveData(name):
+        print('getting save data')
+        if os.path.exists('saves.json'):
+            with open('saves.json', 'r') as f:
+                jsonData = json.load(f)
+                return jsonData[name]
+        return {}
+
+    def startDraw():
+        print('starting draw')
+
+        data = combineData()
+        with open('settings.json', 'w') as f:
+            json.dump(data, f)
+
+        requests.post('http://localhost:' + str(port) + '/draw')
+
+    projectData = getData("package.json")
+    positionData = getData("positions.json")
+    settingsData = getData("settings.json")
+    guiData = getData("guiConfig.json")
+
+    root = tk.Tk()
+    root.title(projectData['name'])
+    # root.geometry('200x200')
+
+    pos = {
+        "row": -1,
+        "col": -1
+    }
+    # setting platform to draw
+
+    pos = getRC(guiData, 'platformText')
+    tk.Label(root, text='PlatformText').grid(row=pos["row"], column=pos["col"])
+    platform = tk.StringVar(root)
+    platforms = getPlatforms(positionData)
+    platformOpts = tk.OptionMenu(root, platform, *platforms)
+    pos = getRC(guiData, 'platform')
+    platformOpts.grid(row=pos["row"], column=pos["col"])
+
+    # speed
+    pos = getRC(guiData, 'delayText')
+    speedVal = tk.IntVar(root)
+    tk.Label(root, text='Delay').grid(row=pos["row"], column=pos["col"])
+    speed = tk.Entry(root, textvariable=speedVal)
+    pos = getRC(guiData, 'delay')
+    speed.grid(row=pos["row"], column=pos["col"])
+
+    # distancing
+    pos = getRC(guiData, 'distanceText')
+    distanceVal = tk.IntVar(root)
+    tk.Label(root, text='Distance').grid(row=pos["row"], column=pos["col"])
+    distance = tk.Entry(root, textvariable=distanceVal)
+    pos = getRC(guiData, 'distance')
+    distance.grid(row=pos["row"], column=pos["col"])
+
+    # checkboxes
+
+    # sort colors
+    pos = getRC(guiData, 'sortColors')
+    sortVal = tk.BooleanVar()
+    sort = tk.Checkbutton(root, text='Sort colors', variable=sortVal)
+    sort.grid(row=pos["row"], column=pos["col"])
+
+    # color sort alg
+    pos = getRC(guiData, 'sortColorsAlgorithmText')
+    tk.Label(root, text='Sort colors alg').grid(
+        row=pos["row"], column=pos["col"])
+    sortColAlg = tk.StringVar(root)
+
+    sortColAlgOpts = tk.OptionMenu(root, sortColAlg, *sortColAlgs)
+    pos = getRC(guiData, 'sortColorsAlgorithm')
+    sortColAlgOpts.grid(row=pos["row"], column=pos["col"])
+
+    # dither
+    pos = getRC(guiData, 'dither')
+    ditherVal = tk.BooleanVar()
+    dither = tk.Checkbutton(root, text='Dither', variable=ditherVal)
+    dither.grid(row=pos["row"], column=pos["col"])
+
+    # dither alg
+    pos = getRC(guiData, 'ditherAlgorithmText')
+    tk.Label(root, text='dither alg').grid(
+        row=pos["row"], column=pos["col"])
+    ditherAlg = tk.StringVar(root)
+
+    ditherAlgOpts = tk.OptionMenu(root, ditherAlg, *ditherAlgs)
+    pos = getRC(guiData, 'ditherAlgorithm')
+    ditherAlgOpts.grid(row=pos["row"], column=pos["col"])
+
+    # fast mode
+    pos = getRC(guiData, 'fastMode')
+    fastVal = tk.BooleanVar()
+    fast = tk.Checkbutton(root, text='Fast mode', variable=fastVal)
+    fast.grid(row=pos["row"], column=pos["col"])
+
+    # line saving mode
+    pos = getRC(guiData, 'lineSavingMode')
+    lineSavingVal = tk.BooleanVar()
+    lineSaving = tk.Checkbutton(
+        root, text='Line saving mode', variable=lineSavingVal)
+    lineSaving.grid(row=pos["row"], column=pos["col"])
+
+    # bucket
+    pos = getRC(guiData, 'bucket')
+    bucketVal = tk.BooleanVar()
+    bucket = tk.Checkbutton(root, text='Bucket', variable=bucketVal)
+    bucket.grid(row=pos["row"], column=pos["col"])
+
+    # todo: dither algorithm
+
+    # ignore color
+    # todo: add check for valid color
+    # todo: add to settings
+    pos = getRC(guiData, 'ignoreColorText')
+    tk.Label(root, text='Ignore color').grid(row=pos["row"], column=pos["col"])
+    ignore = tk.Entry(root)
+    pos = getRC(guiData, 'ignoreColor')
+    ignore.grid(row=pos["row"], column=pos["col"])
+
+    # max lines
+    pos = getRC(guiData, 'maxLinesText')
+    maxLinesVal = tk.IntVar(root)
+    tk.Label(root, text='Max lines').grid(row=pos["row"], column=pos["col"])
+    maxLines = tk.Entry(root, textvariable=maxLinesVal)
+    pos = getRC(guiData, 'maxLines')
+    maxLines.grid(row=pos["row"], column=pos["col"])
+
+    # delay between colors
+    pos = getRC(guiData, 'colorDelayText')
+    colorDelayVal = tk.IntVar(root)
+    tk.Label(root, text='Delay between colors').grid(
+        row=pos["row"], column=pos["col"])
+    colorDelay = tk.Entry(root, textvariable=colorDelayVal)
+    pos = getRC(guiData, 'colorDelay')
+    colorDelay.grid(row=pos["row"], column=pos["col"])
+
+    # image
+    pos = getRC(guiData, 'imageUrlText')
+    imageVal = tk.StringVar(root)
+    tk.Label(root, text='Image URL').grid(row=pos["row"], column=pos["col"])
+    image = tk.Entry(root, textvariable=imageVal)
+    pos = getRC(guiData, 'imageUrl')
+    image.grid(row=pos["row"], column=pos["col"])
+
+    # draw button
+    pos = getRC(guiData, 'drawButton')
+    tk.Button(root, text='Draw', command=startDraw).grid(
+        row=pos["row"], column=pos["col"])
+
+    # save / load configurations
+    # save
+    # tk.Label(root, text='Save configuration').grid(row=10, column=0)
+    pos = getRC(guiData, 'saveConfigButton')
+    saveVal = tk.StringVar(root)
+    tk.Button(root, text='Save config',
+              command=saveConfig).grid(row=pos["row"], column=pos["col"])
+    save = tk.Entry(root, textvariable=saveVal)
+    pos = getRC(guiData, 'saveConfig')
+    save.grid(row=pos["row"], column=pos["col"])
+
+    # load
+    pos = getRC(guiData, 'loadConfigButton')
+    tk.Button(root, text='Load config',
+              command=lambda: loadData(getSaveData(loadVal.get()))).grid(row=pos["row"], column=pos["col"])
+
+    loadVal = tk.StringVar(root)
+    load = tk.OptionMenu(root, loadVal, *getSaves())
+    pos = getRC(guiData, 'loadConfig')
+    load.grid(row=pos["row"], column=pos["col"])
+
+    # version
+    version = tk.Label(root, text="Version: " + projectData["version"])
+    version.grid()
+
+    loadData(settingsData)
+    root.mainloop()
 
 
-with Listener(on_release=on_release) as Listener:
-    Listener.join()
+def onPress(key):
+    if key == keyboard.Key.esc or key == keyboard.KeyCode.from_char(config['abortKey']):
+        print("Aborting")
+        # create a new json file
+        with open(path, 'w') as f:
+            json.dump({"abort": True}, f)
+
+
+config = {}
+
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+path = config["temp"]+config["abortingFile"]
+
+
+def keyboardListener():
+    with keyboard.Listener(on_press=onPress) as l:
+
+        l.join()
+
+
+if __name__ == "__main__":
+    print("Starting")
+
+    guiThread = threading.Thread(target=main, args=(config['port'],))
+    guiThread.daemon = True
+    guiThread.start()
+
+    keyboardThread = threading.Thread(target=keyboardListener)
+    keyboardThread.daemon = True
+    keyboardThread.start()
+
+    while True:
+        if not guiThread.is_alive():
+            print("GUI thread died... exiting")
+            sys.exit()
+
+        if not keyboardThread.is_alive():
+            print("keyboard thread died... exiting")
+            sys.exit()
+
+        time.sleep(1)
