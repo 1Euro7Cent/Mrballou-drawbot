@@ -4,6 +4,7 @@ const DrawInstruction = require("./DrawInstruction")
 const NearestColor = require("nearest-rgba")
 const Setting = require("../config/Setting")
 const Positions = require("../config/Positions")
+const DebugSaver = require("./../DebugSaver")
 
 module.exports = class InstructionWriter {
     /**
@@ -16,16 +17,25 @@ module.exports = class InstructionWriter {
          */
         // @ts-ignore
         this.nc = null
+
+        if (this.config.debug.enabled && this.config.debug.saveWrite.enabled) {
+            this.debug = new DebugSaver(config)
+        }
     }
 
     /**
      * @param {Jimp} img
-     * @returns {DrawInstruction[]}
+     * @returns {Promise<DrawInstruction[]>}
      * @param {Positions} positions
      * @param {Setting} settings
      */
-    write(img, positions, settings) {
+    async write(img, positions, settings) {
         this.settings = settings.data
+
+        if (this.debug) {
+            this.debug.instructionPixels = []
+            this.debug.srCImage = img
+        }
         let instructions = []
 
         let position = positions.getPlatform(this.settings.name)
@@ -174,6 +184,11 @@ module.exports = class InstructionWriter {
             }
         }
 
+        /**
+         * this variable stores pixels already drawn to not waste time on drawing them again
+         * @type {string[]}
+         */
+        let drawnPixels = []
 
 
         console.log(`ignoring colors:`, settings.data.ignoreColors)
@@ -182,11 +197,16 @@ module.exports = class InstructionWriter {
         for (let color in colors) {
 
             if (settings.data.ignoreColors.includes(color)) continue
-            /**
-             * this variable stores pixels already drawn to not waste time on drawing them again
-             * @type {string[]}
-             */
-            let drawnPixels = []
+
+            if (this.debug) {
+                this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
+                // await this.debug.makeImage()
+            }
+
+            drawnPixels = []
+
+            process.stdout.write('    ')
+            console.timeLog("write", `writing color ${color}`)
 
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
@@ -297,8 +317,12 @@ module.exports = class InstructionWriter {
                                         x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
                                     }, "DRAW_LINE"))
 
+                                    let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
+                                    this.debug?.drawnPixels.push(pixString)
 
-                                    drawnPixels.push(`${x}-${x + (xPixels - 1)},${y}-${y}`)
+                                    await this.debug?.makeImage(pixString)
+                                    drawnPixels.push(pixString)
+                                    x += xPixels
                                     // addLTodrawn(instructions, drawnPixels)
 
 
@@ -312,7 +336,11 @@ module.exports = class InstructionWriter {
                                     }, "DRAW_LINE"))
 
                                     // addLTodrawn(instructions, drawnPixels)
-                                    drawnPixels.push(`${x}-${x},${y}-${y + (yPixels - 1)}`)
+                                    let pixString = `${x}-${x},${y}-${y + (yPixels - 1)}`
+                                    this.debug?.drawnPixels.push(pixString)
+
+                                    await this.debug?.makeImage(pixString)
+                                    drawnPixels.push(pixString)
                                 }
                             }
                             else {
@@ -339,46 +367,61 @@ module.exports = class InstructionWriter {
         console.log(`Done! Created ${instructions.length} instructions.`)
         // console.timeLog()
         console.timeEnd('write')
+        // return
+
 
         // make shure EVERY draw instruction is in bounds
 
         for (let instruction of instructions) {
-            if (instruction.comment.toLowerCase().includes('draw')) {
-                if (instruction.cords.x1 < position.topleft.x || instruction.cords.x1 > position.bottomright.x ||
-                    instruction.cords.y1 < position.topleft.y || instruction.cords.y1 > position.bottomright.y ||
 
-                    // @ts-ignore
-                    instruction.cords.x2 < position.topleft.x || instruction.cords.x2 > position.bottomright.x ||
-                    // @ts-ignore
-                    instruction.cords.y2 < position.topleft.y || instruction.cords.y2 > position.bottomright.y
-                ) {
-                    instruction.comment = 'OUT_OF_BOUNDS'
-
-                }
-
-                if (instruction.type == 'DRAG' || instruction.type == 'DRAGNOTRELEASE') {
-                    // @ts-ignore
-                    instruction.cords.x2 = instruction.cords.x2 > position.bottomright.x ? position.bottomright.x : instruction.cords.x2
-                    // @ts-ignore
-                    instruction.cords.x2 = instruction.cords.x2 < position.topleft.x ? position.topleft.x : instruction.cords.x2
-
-                    // @ts-ignore
-                    instruction.cords.y2 = instruction.cords.y2 > position.bottomright.y ? position.bottomright.y : instruction.cords.y2
-                    // @ts-ignore
-                    instruction.cords.y2 = instruction.cords.y2 < position.topleft.y ? position.topleft.y : instruction.cords.y2
-
-                    instruction.cords.x1 = instruction.cords.x1 > position.bottomright.x ? position.bottomright.x : instruction.cords.x1
-                    instruction.cords.x1 = instruction.cords.x1 < position.topleft.x ? position.topleft.x : instruction.cords.x1
-
-                    instruction.cords.y1 = instruction.cords.y1 > position.bottomright.y ? position.bottomright.y : instruction.cords.y1
-                    instruction.cords.y1 = instruction.cords.y1 < position.topleft.y ? position.topleft.y : instruction.cords.y1
+            // dot operations
+            if (instruction.type == 'DOT' && instruction.comment.toLowerCase().includes("draw")) {
+                let pos = instruction.cords
+                if (pos.x1 < 0 || pos.y1 < 0 || pos.x1 > position.bottomright.x || pos.y1 > position.bottomright.y) {
+                    instruction.comment = "OUT_OF_BOUNDS"
                 }
             }
 
+
+            // drag operations. when out of bounds make them in bounds
+            if (instruction.type == 'DRAG' && instruction.comment.toLowerCase().includes("draw")) {
+                let pos = instruction.cords
+                if (pos.x1 < 0 || pos.y1 < 0) {
+                    instruction.comment = "OUT_OF_BOUNDS"
+                }
+
+                if (typeof pos.x2 == 'number' && typeof pos.y2 == 'number') {
+                    // making in bounds
+                    if (pos.x2 < 0) pos.x2 = 0
+
+                    if (pos.y2 < 0) pos.y2 = 0
+                    if (pos.x2 > position.bottomright.x) pos.x2 = position.bottomright.x
+                    if (pos.y2 > position.bottomright.y) pos.y2 = position.bottomright.y
+
+                    if (pos.x1 < 0) pos.x1 = 0
+                    if (pos.y1 < 0) pos.y1 = 0
+                    if (pos.x1 > position.bottomright.x) pos.x1 = position.bottomright.x
+                    if (pos.y1 > position.bottomright.y) pos.y1 = position.bottomright.y
+
+
+
+                    instruction.cords = pos
+                }
+            }
         }
 
         // remove every out of bounds
         instructions = instructions.filter(i => i.comment !== 'OUT_OF_BOUNDS')
+
+
+        if (this.debug) {
+            this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
+
+
+
+            this.debug.instructionPixels = instructionsToDebug(instructions, position, this.settings.distancing)
+            await this.debug.makeImage()
+        }
 
         // add onTimeDelay to all instructions
 
@@ -393,6 +436,7 @@ module.exports = class InstructionWriter {
             }
         }
 
+        // return []
 
         return instructions
     }
@@ -400,12 +444,22 @@ module.exports = class InstructionWriter {
 
 /**
  * @param {DrawInstruction[]} instructions
- * @param {string[]} drawnPixels
+ * @param {{ topleft: { x: number; y: number; }; }} position
+ * @param {number} distancing
  */
-// @ts-ignore
-function addLTodrawn(instructions, drawnPixels) {
-    drawnPixels.push(`${instructions[instructions.length - 1].cords.x1}-${instructions[instructions.length - 1].cords.x2 ?? 0},${instructions[instructions.length - 1].cords.y1}-${instructions[instructions.length - 1].cords.y2 ?? 0}`)
+function instructionsToDebug(instructions, position, distancing) {
+    let debugPixStrings = []
+    for (let instruction of instructions) {
+        if (instruction.type == 'DRAG') {
+            let relative1 = absoluteToRelative(instruction.cords.x1, instruction.cords.y1, position, distancing)
+            let relative2 = absoluteToRelative(instruction.cords.x2 ?? 0, instruction.cords.y2 ?? 0, position, distancing)
 
+            let pixString = `${relative1.x}-${relative2.x},${relative1.y}-${relative2.y}`
+            debugPixStrings.push(pixString)
+        }
+
+    }
+    return debugPixStrings
 }
 
 /**
@@ -430,10 +484,26 @@ function isInRange(value, min, max) {
  * @param {number} xModifyer
  * @param {number} yModifyer
  */
-function relativeToAbsolute(x, y, position, distancing, xModifyer, yModifyer) {
+function relativeToAbsolute(x, y, position, distancing, xModifyer = 0, yModifyer = 0) {
     return {
         x: (x * distancing) + position.topleft.x + (xModifyer * distancing),
         y: (y * distancing) + position.topleft.y + (yModifyer * distancing)
+    }
+
+}
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {{ topleft: { x: number; y: number; }; }} position
+ * @param {number} distancing
+ * @param {number} xModifyer
+ * @param {number} yModifyer
+ */
+function absoluteToRelative(x, y, position, distancing, xModifyer = 0, yModifyer = 0) {
+    return {
+        x: (x - position.topleft.x - (xModifyer * distancing)) / distancing,
+        y: (y - position.topleft.y - (yModifyer * distancing)) / distancing
     }
 
 }

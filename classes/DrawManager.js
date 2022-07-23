@@ -87,7 +87,7 @@ module.exports = class DrawManager {
             img = dither.dither(this.config.temp + 'dithered.png')
         }
 
-        let instructions = this.instructionWriter.write(img, positions, settings)
+        let instructions = await this.instructionWriter.write(img, positions, settings)
 
         // console.log(instructions)
         console.time("draw")

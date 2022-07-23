@@ -13,6 +13,8 @@ config_.save('./config.json')
 
 let config = config_.data
 
+if (config.debug.enabled) console.warn('Debug mode enabled')
+
 // console.log(config)
 
 if (fs.existsSync(config.temp + config.abortingFile)) {
@@ -54,6 +56,7 @@ app.post('/draw', (req, res) => {
     console.log('got draw request')
     setting.fromFile('./settings.json')
     setting.data.ignoreColors = ['#ffffff'] // for test purposes. will be removed later
+    // setting.data.ignoreColors = [] // for test purposes. will be removed later
     setting.save('./settings.json')
     position.fromFile('./positions.json')
     position.save('./positions.json')

@@ -15,7 +15,6 @@ module.exports = class DrawInstruction {
     }
 
     async execute() {
-        // todo: implement with moving mouse
         switch (this.type) {
             case "DOT":
                 robot.moveMouse(this.cords.x1, this.cords.y1)
