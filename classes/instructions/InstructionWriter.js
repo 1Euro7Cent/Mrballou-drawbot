@@ -46,7 +46,7 @@ module.exports = class InstructionWriter {
 
         console.log(hexColors)
 
-        this.ns = new NearestColor().fromHEX(hexColors)
+        this.nc = new NearestColor().fromHEX(hexColors)
 
         // recolor image to nearest colors and count colors
         let recolored = img.clone()
@@ -55,7 +55,7 @@ module.exports = class InstructionWriter {
             for (let y = 0; y < img.bitmap.height; y++) {
                 let hex = img.getPixelColor(x, y)
                 let rgba = Jimp.intToRGBA(hex)
-                let nearest = this.ns.nearest(rgba, false)
+                let nearest = this.nc.nearest(rgba, false)
 
                 let nearestint = Jimp.rgbaToInt(nearest.r, nearest.g, nearest.b, nearest.a)
                 let nearesthex = rgbToHex(nearest)

@@ -110,6 +110,12 @@ def main(port):
         except tk.TclError:
             colorDelayVal.set(1)
 
+        try:
+            if onTimeDelayMultiplyerVal.get() == '':
+                onTimeDelayMultiplyerVal.set(0)
+        except tk.TclError:
+            onTimeDelayMultiplyerVal.set(0)
+
     def combineData():
         checkData()
         res = {
@@ -198,7 +204,7 @@ def main(port):
     # setting platform to draw
 
     pos = getRC(guiData, 'platformText')
-    tk.Label(root, text='PlatformText').grid(row=pos["row"], column=pos["col"])
+    tk.Label(root, text='Platform').grid(row=pos["row"], column=pos["col"])
     platform = tk.StringVar(root)
     platforms = getPlatforms(positionData)
     platformOpts = tk.OptionMenu(root, platform, *platforms)
