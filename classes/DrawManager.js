@@ -65,6 +65,16 @@ module.exports = class DrawManager {
         }
 
         let position = positions.getPlatform(this.settings.name)
+        if (settings.data.positionOverride.enabled) {
+            position.topleft = {
+                x: settings.data.positionOverride.x1,
+                y: settings.data.positionOverride.y1
+            }
+            position.bottomright = {
+                x: settings.data.positionOverride.x2,
+                y: settings.data.positionOverride.y2
+            }
+        }
 
         let size = {
             w: Math.round((position.bottomright.x - position.topleft.x) / this.settings.distancing),
@@ -72,7 +82,8 @@ module.exports = class DrawManager {
         }
 
         console.log(`resizing to ${size.w}x${size.h}`)
-        let resized = await this.resizer.resize(img, size)
+        // @ts-ignore
+        let resized = await this.resizer.resize(img, size, settings.data.resizeImgAlg)
 
         await resized.writeAsync(this.config.temp + 'resized.png')
 

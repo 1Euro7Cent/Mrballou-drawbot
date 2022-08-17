@@ -15,6 +15,11 @@ module.exports = class DrawInstruction {
     }
 
     async execute() {
+        // @ts-ignore
+        if ((isNaN(this.cords.x1) || isNaN(this.cords.y1) || (this.type.includes('DRAG') && (isNaN(this.cords.x2) || isNaN(this.cords.y2))))) {
+            console.log(this)
+            throw new Error(`Cords are not numbers`)
+        }
         switch (this.type) {
             case "DOT":
                 robot.moveMouse(this.cords.x1, this.cords.y1)

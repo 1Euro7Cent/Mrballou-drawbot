@@ -40,11 +40,115 @@ module.exports = class InstructionWriter {
 
         let position = positions.getPlatform(this.settings.name)
 
+        if (settings.data.positionOverride.enabled) {
+            position.topleft = {
+                x: settings.data.positionOverride.x1,
+                y: settings.data.positionOverride.y1
+            }
+            position.bottomright = {
+                x: settings.data.positionOverride.x2,
+                y: settings.data.positionOverride.y2
+            }
+        }
+
+        /**
+         positionImgAlgs= [
+            "topLeft",
+            "topCenter",
+            "topRight",
+            "centerLeft",
+            "center",
+            "centerRight",
+            "bottomLeft",
+            "bottomCenter",
+            "bottomRight"
+        ]
+         */
+
+        /**
+         * 0 = no offset at all. aka the image is at the top left corner
+         * the higher the number the more to the right and down the image is located
+         */
+        let offsets = {
+            x: 0,
+            y: 0
+        }
+
+        let centerX = (position.width / 2) - (img.bitmap.width * this.settings.distancing / 2)
+        let centerY = (position.height / 2) - (img.bitmap.height * this.settings.distancing / 2)
+
+        // calculate the offsets based on the position algorithm
+        switch (this.settings.positionImgAlg) {
+            case "topLeft":
+                offsets.x = 0
+                offsets.y = 0
+                break
+
+            case "topCenter":
+                offsets.x = centerX
+                offsets.y = 0
+                break
+
+            case "topRight":
+                offsets.x = position.width - (img.bitmap.width * this.settings.distancing)
+                offsets.y = 0
+                break
+
+            case "centerLeft":
+                offsets.x = 0
+                offsets.y = centerY
+                break
+
+            case "center":
+                offsets.x = centerX
+                offsets.y = centerY
+                break
+
+            case "centerRight":
+                offsets.x = position.width - (img.bitmap.width * this.settings.distancing)
+                offsets.y = centerY
+                break
+
+            case "bottomLeft":
+                offsets.x = 0
+                offsets.y = position.height - (img.bitmap.height * this.settings.distancing)
+                break
+
+            case "bottomCenter":
+                offsets.x = centerX
+                offsets.y = position.height - (img.bitmap.height * this.settings.distancing)
+                break
+
+            case "bottomRight":
+                offsets.x = position.width - (img.bitmap.width * this.settings.distancing)
+                offsets.y = position.height - (img.bitmap.height * this.settings.distancing)
+                break
+
+
+            default:
+                throw new Error("Invalid positionImgAlg: " + this.settings.positionImgAlg)
+
+        }
+
+
+        // round offsets
+        offsets.x = Math.round(offsets.x)
+        offsets.y = Math.round(offsets.y)
+
+        offsets.y = Math.max(0, offsets.y)
+        offsets.x = Math.max(0, offsets.x)
+
+        // make shure that offset is divisible by distancing to avoid skipping lines
+        offsets.y = Math.floor(offsets.y / this.settings.distancing) * this.settings.distancing
+        offsets.x = Math.floor(offsets.x / this.settings.distancing) * this.settings.distancing
+
+        console.log("offsets:", offsets)
+
 
 
         let hexColors = Object.keys(position.colors)
 
-        console.log(hexColors)
+        // console.log(hexColors)
 
         this.nc = new NearestColor().fromHEX(hexColors)
 
@@ -165,8 +269,8 @@ module.exports = class InstructionWriter {
                     }, 'SEL_BUCKET_COL'))
 
                     instructions.push(new DrawInstruction('DOT', {
-                        x1: position.topleft.x + this.settings.distancing,
-                        y1: position.topleft.y + this.settings.distancing,
+                        x1: position.topleft.x + this.settings.distancing + offsets.x,
+                        y1: position.topleft.y + this.settings.distancing + offsets.y,
                         delay: this.settings.delay
                     }, 'DRAW_BUCKET'))
 
@@ -272,13 +376,19 @@ module.exports = class InstructionWriter {
                                     let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                     let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
                                     instructions.push(new DrawInstruction('DRAG', {
-                                        x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
+                                        x1: pos1.x + offsets.x,
+                                        y1: pos1.y + offsets.y,
+                                        x2: pos2.x + offsets.x,
+                                        y2: pos2.y + offsets.y,
+                                        delay: this.settings.delay,
                                     }, "DRAW_LINE"))
                                 }
                                 else {
                                     let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                     instructions.push(new DrawInstruction('DOT', {
-                                        x1: pos.x, y1: pos.y, delay: this.settings.delay
+                                        x1: pos.x + offsets.x,
+                                        y1: pos.y + offsets.y,
+                                        delay: this.settings.delay
                                     }, "DRAW_PIXEL"))
 
                                 }
@@ -314,7 +424,11 @@ module.exports = class InstructionWriter {
                                     let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                     let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
                                     instructions.push(new DrawInstruction('DRAG', {
-                                        x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
+                                        x1: pos1.x + offsets.x,
+                                        y1: pos1.y + offsets.y,
+                                        x2: pos2.x + offsets.x,
+                                        y2: pos2.y + offsets.y,
+                                        delay: this.settings.delay,
                                     }, "DRAW_LINE"))
 
                                     let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
@@ -332,7 +446,11 @@ module.exports = class InstructionWriter {
                                     let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                     let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, yPixels - 1)
                                     instructions.push(new DrawInstruction('DRAG', {
-                                        x1: pos1.x, y1: pos1.y, x2: pos2.x, y2: pos2.y, delay: this.settings.delay,
+                                        x1: pos1.x + offsets.x,
+                                        y1: pos1.y + offsets.y,
+                                        x2: pos2.x + offsets.x,
+                                        y2: pos2.y + offsets.y,
+                                        delay: this.settings.delay,
                                     }, "DRAW_LINE"))
 
                                     // addLTodrawn(instructions, drawnPixels)
@@ -346,7 +464,9 @@ module.exports = class InstructionWriter {
                             else {
                                 let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                 instructions.push(new DrawInstruction('DOT', {
-                                    x1: pos.x, y1: pos.y, delay: this.settings.delay
+                                    x1: pos.x + offsets.x,
+                                    y1: pos.y + offsets.y,
+                                    delay: this.settings.delay
                                 }, "DRAW_PIXEL"))
                             }
 
@@ -356,7 +476,9 @@ module.exports = class InstructionWriter {
                     else {
                         let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                         let instruction = new DrawInstruction('DOT', {
-                            x1: pos.x, y1: pos.y, delay: this.settings.delay
+                            x1: pos.x + offsets.x,
+                            y1: pos.y + offsets.y,
+                            delay: this.settings.delay
                         }, "DRAW_PIXEL")
                         instructions.push(instruction)
                     }
@@ -377,7 +499,7 @@ module.exports = class InstructionWriter {
             // dot operations
             if (instruction.type == 'DOT' && instruction.comment.toLowerCase().includes("draw")) {
                 let pos = instruction.cords
-                if (pos.x1 < 0 || pos.y1 < 0 || pos.x1 > position.bottomright.x || pos.y1 > position.bottomright.y) {
+                if (pos.x1 < position.topleft.x || pos.y1 < position.topleft.y || pos.x1 > position.bottomright.x || pos.y1 > position.bottomright.y) {
                     instruction.comment = "OUT_OF_BOUNDS"
                 }
             }
@@ -386,20 +508,23 @@ module.exports = class InstructionWriter {
             // drag operations. when out of bounds make them in bounds
             if (instruction.type == 'DRAG' && instruction.comment.toLowerCase().includes("draw")) {
                 let pos = instruction.cords
-                if (pos.x1 < 0 || pos.y1 < 0) {
+                if (pos.x1 < position.topleft.x || pos.y1 < position.topleft.y) {
                     instruction.comment = "OUT_OF_BOUNDS"
                 }
 
                 if (typeof pos.x2 == 'number' && typeof pos.y2 == 'number') {
                     // making in bounds
-                    if (pos.x2 < 0) pos.x2 = 0
+                    if (pos.x2 < position.topleft.x) pos.x2 = position.topleft.x
 
-                    if (pos.y2 < 0) pos.y2 = 0
+                    if (pos.y2 < position.topleft.y) pos.y2 = position.topleft.y
                     if (pos.x2 > position.bottomright.x) pos.x2 = position.bottomright.x
                     if (pos.y2 > position.bottomright.y) pos.y2 = position.bottomright.y
 
-                    if (pos.x1 < 0) pos.x1 = 0
-                    if (pos.y1 < 0) pos.y1 = 0
+
+                    if (pos.x1 < position.topleft.x) pos.x1 = position.topleft.x
+                    if (pos.y1 < position.topleft.y) pos.y1 = position.topleft.y
+
+
                     if (pos.x1 > position.bottomright.x) pos.x1 = position.bottomright.x
                     if (pos.y1 > position.bottomright.y) pos.y1 = position.bottomright.y
 

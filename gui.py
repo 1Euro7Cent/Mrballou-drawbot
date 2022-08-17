@@ -1,4 +1,4 @@
-from pynput import keyboard
+from pynput import keyboard, mouse
 import tkinter as tk
 import json
 import threading
@@ -12,6 +12,16 @@ positionData = {}
 settingsData = {}
 guiData = {}
 
+requestingManualOverride = False
+manualOverrideVal = {
+    "enabled": False,
+    "x1": -1,
+    "y1": -1,
+    "x2": -1,
+    "y2": -1
+}
+
+
 sortColAlgs = [
     "size 0-9",
     "size 9-0",
@@ -19,6 +29,26 @@ sortColAlgs = [
     "name Z-A",
     "random",
     "reverse"
+]
+
+resizeImgAlgs = [
+    "fit",
+    "stretch",
+    "cropX",
+    "cropY",
+    "none"
+]
+
+positionImgAlgs = [
+    "topLeft",
+    "topCenter",
+    "topRight",
+    "centerLeft",
+    "center",
+    "centerRight",
+    "bottomLeft",
+    "bottomCenter",
+    "bottomRight"
 ]
 
 ditherAlgs = [
@@ -61,6 +91,33 @@ def getPlatforms(data):
     return res
 
 
+def manualOverride():
+    print("Manual override")
+    global requestingManualOverride
+    global manualOverrideVal
+    manualOverrideVal = {
+        "enabled": True,
+        "x1": -1,
+        "y1": -1,
+        "x2": -1,
+        "y2": -1
+    }
+    requestingManualOverride = True
+    print(manualOverrideVal)
+
+
+def resetManualOverride():
+    global manualOverrideVal
+    manualOverrideVal = {
+        "enabled": False,
+        "x1": -1,
+        "y1": -1,
+        "x2": -1,
+        "y2": -1
+    }
+    print(manualOverrideVal)
+
+
 def main(port):
 
     def loadData(data):
@@ -80,6 +137,8 @@ def main(port):
             lineSavingVal.set(data['lineSaving'])
             onTimeDelayMultiplyerVal.set(data['onTimeDelayMultiplyer'])
             onTimeDelayVal.set(data['onTimeDelay'])
+            imageResizeAlg.set(data['resizeImgAlg'])
+            positionImageAlg.set(data['positionImgAlg'])
         except KeyError:
             print("Error loading data")
         checkData()
@@ -116,6 +175,18 @@ def main(port):
         except tk.TclError:
             onTimeDelayMultiplyerVal.set(0)
 
+        try:
+            if imageResizeAlg.get() == '':
+                imageResizeAlg.set(resizeImgAlgs[0])
+        except tk.TclError:
+            imageResizeAlg.set(resizeImgAlgs[0])
+
+        try:
+            if positionImageAlg.get() == '':
+                positionImageAlg.set(positionImgAlgs[0])
+        except tk.TclError:
+            positionImageAlg.set(positionImgAlgs[0])
+
     def combineData():
         checkData()
         res = {
@@ -133,7 +204,10 @@ def main(port):
             "ditherAlg": ditherAlg.get(),
             "lineSaving": lineSavingVal.get(),
             "onTimeDelayMultiplyer": float(onTimeDelayMultiplyerVal.get()),
-            "onTimeDelay": onTimeDelayVal.get()
+            "onTimeDelay": onTimeDelayVal.get(),
+            "positionOverride": manualOverrideVal,
+            "resizeImgAlg": imageResizeAlg.get(),
+            "positionImgAlg": positionImageAlg.get()
         }
         return res
 
@@ -244,6 +318,27 @@ def main(port):
     sortColAlgOpts = tk.OptionMenu(root, sortColAlg, *sortColAlgs)
     pos = getRC(guiData, 'sortColorsAlgorithm')
     sortColAlgOpts.grid(row=pos["row"], column=pos["col"])
+
+    # image resize alg
+    pos = getRC(guiData, 'resizeImageAlgorithmText')
+    tk.Label(root, text='Image resize alg').grid(
+        row=pos["row"], column=pos["col"])
+
+    imageResizeAlg = tk.StringVar(root)
+    imageResizeAlgOpts = tk.OptionMenu(root, imageResizeAlg, *resizeImgAlgs)
+    pos = getRC(guiData, 'resizeImageAlgorithm')
+    imageResizeAlgOpts.grid(row=pos["row"], column=pos["col"])
+
+    # position image alg
+    pos = getRC(guiData, 'positionImageAlgorithmText')
+    tk.Label(root, text='Position image alg').grid(
+        row=pos["row"], column=pos["col"])
+
+    positionImageAlg = tk.StringVar(root)
+    positionImageAlgOpts = tk.OptionMenu(
+        root, positionImageAlg, *positionImgAlgs)
+    pos = getRC(guiData, 'positionImageAlgorithm')
+    positionImageAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # dither
     pos = getRC(guiData, 'dither')
@@ -359,6 +454,17 @@ def main(port):
     pos = getRC(guiData, 'loadConfig')
     load.grid(row=pos["row"], column=pos["col"])
 
+    # manual override stuff
+
+    pos = getRC(guiData, 'manualOverrideButton')
+
+    tk.Button(root, text='Manual override', command=lambda: manualOverride()).grid(
+        row=pos["row"], column=pos["col"])
+
+    pos = getRC(guiData, 'manualOverrideResetButton')
+    tk.Button(root, text='Reset manual override', command=lambda: resetManualOverride(
+    )).grid(row=pos["row"], column=pos["col"])
+
     # version
     version = tk.Label(root, text="Version: " + projectData["version"])
     version.grid()
@@ -375,6 +481,27 @@ def onPress(key):
             json.dump({"abort": True}, f)
 
 
+def onClick(x, y, button, pressed):
+    global manualOverrideVal
+    global requestingManualOverride
+    if requestingManualOverride and pressed and button == mouse.Button.left:
+        print("Manual overrise pressed at {} {}".format(x, y))
+
+       # if x1 and y1 are not set, set them to the current position
+       # the same for x2 and y2 but with the next click
+        if manualOverrideVal["x1"] < 0 or manualOverrideVal["y1"] < 0:
+            manualOverrideVal["x1"] = x
+            manualOverrideVal["y1"] = y
+        else:
+
+            if manualOverrideVal["x2"] < 0 or manualOverrideVal["y2"] < 0:
+                manualOverrideVal["x2"] = x
+                manualOverrideVal["y2"] = y
+                requestingManualOverride = False
+
+                print(manualOverrideVal)
+
+
 config = {}
 
 with open('config.json', 'r') as f:
@@ -389,6 +516,11 @@ def keyboardListener():
         l.join()
 
 
+def mouseListener():
+    with mouse.Listener(on_click=onClick) as l:
+        l.join()
+
+
 if __name__ == "__main__":
     print("Starting")
 
@@ -400,6 +532,10 @@ if __name__ == "__main__":
     keyboardThread.daemon = True
     keyboardThread.start()
 
+    mouseThread = threading.Thread(target=mouseListener)
+    mouseThread.daemon = True
+    mouseThread.start()
+
     while True:
         if not guiThread.is_alive():
             print("GUI thread died... exiting")
@@ -407,6 +543,10 @@ if __name__ == "__main__":
 
         if not keyboardThread.is_alive():
             print("keyboard thread died... exiting")
+            sys.exit()
+
+        if not mouseThread.is_alive():
+            print("mouse thread died... exiting")
             sys.exit()
 
         time.sleep(1)

@@ -15,6 +15,8 @@ module.exports = class Positions extends BaseConfig {
                     x: 0,
                     y: 0
                 },
+                width: 0, // based on the two above
+                height: 0,
 
                 colors: {
                     "#000000": {
@@ -46,9 +48,13 @@ module.exports = class Positions extends BaseConfig {
 
     /**
      * @param {string} platform
-     * @returns {{topleft: {x: number, y: number}, bottomright: {x: number, y: number}, bucket:{x: number, y:number}, pen:{x:number, y:number} , colors: {hex: {x: number, y: number}}}}
+     * @returns {{topleft: {x: number, y: number}, bottomright: {x: number, y: number}, width:number, height:number, bucket:{x: number, y:number}, pen:{x:number, y:number} , colors: {hex: {x: number, y: number}}}}
      */
     getPlatform(platform) {
+        let width = this.data[platform].bottomright.x - this.data[platform].topleft.x
+        let height = this.data[platform].bottomright.y - this.data[platform].topleft.y
+        this.data[platform].width = width
+        this.data[platform].height = height
 
         return this.data[platform]
 

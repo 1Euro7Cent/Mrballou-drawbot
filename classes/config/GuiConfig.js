@@ -14,12 +14,16 @@ module.exports = class GuiConfig extends BaseConfig {
             ["lineSavingMode", "onTimeDelayMode"],
             ["onTimeDelayText", "onTimeDelayMultiplyer"],
             ["sortColorsAlgorithmText", "sortColorsAlgorithm"],
+            ["resizeImageAlgorithmText", "resizeImageAlgorithm"],
+            ["positionImageAlgorithmText", "positionImageAlgorithm"],
+
             ["ditherAlgorithmText", "ditherAlgorithm"],
             ["ignoreColorText", "ignoreColor"],
             ["maxLinesText", "maxLines"],
             ["colorDelayText", "colorDelay"],
             ["saveConfigButton", "saveConfig"],
             ["loadConfigButton", "loadConfig"],
+            ["manualOverrideButton", "manualOverrideResetButton"],
             ["imageUrlText", "imageUrl"],
             ["", "drawButton"],
 

@@ -2,7 +2,7 @@
 
 If you have questions suggestions or bugs, please open an issue or send me a dm per dc(mrballou#9055)
 
-## installation video:
+## installation video (click image):
 
 [![placeholder](https://img.youtube.com/vi/3Js--QGcVpI/0.jpg)](https://youtu.be/3Js--QGcVpI)
 
@@ -20,26 +20,36 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
 
 ## Installation
 
-- go to releases
-- download the latest release
-- extract the zip file into a folder
-- run the `drawbot.exe`
-- close the window again
-- run `initializePositions.exe` and follow the instructions (abort/save with right click)
-- run `drawbot.exe` again
-- run `gui.exe`
-- enjoy!
+- Go to releases.
+- Download the latest release.
+- Extract the zip file into a folder.
+- Run the `drawbot.exe`.
+- Close the window again.
+- Run `initializePositions.exe` and follow the instructions (abort/save with right click).
+- Run `drawbot.exe` again.
+- Run `gui.exe`.
+- Enjoy!
 
 ## Build
 
-- clone repo
-- have [c++ build tools](https://visualstudio.microsoft.com/en/) installed
-- have [python 3.10+](https://www.python.org/downloads/) installed
-- have [nodejs 16+](https://nodejs.org/en/) installed
-- install pip requirements (`pip install -r requirements.txt`)
-- install npm dependencies (`npm install`)
-- to build run `npm run build`
+- Clone repo.
+- Have [c++ build tools](https://visualstudio.microsoft.com/en/) installed.
+- Have [python 3.10+](https://www.python.org/downloads/) installed.
+- Have [nodejs 16+](https://nodejs.org/en/) installed.
+- Install pip requirements (`pip install -r requirements.txt`).
+- Install npm dependencies (`npm install`).
+- To build run `npm run build`.
+- To run the main bot run `node index.js`.
+- To run the gui run `python gui.py`.
 
-## faq:
+## Faq:
 
 - If the gui instantly crashes, try running the drawbot.exe and then the gui. The drawbot.exe creates all nessesery files for the gui to work.
+- The override position works like this:
+  - press the override button.
+  - Move the mouse to the top left corner where you want to override the position to.
+  - Click.
+  - Move the mouse to the bottom right corner where you want to override the position to.
+  - Click.
+  - The bot will now only draw in the new definded area.
+  - Reset by pressing the reset button.
