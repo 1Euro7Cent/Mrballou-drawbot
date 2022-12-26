@@ -7,6 +7,8 @@ import requests
 import os
 import time
 
+# todo: rewrite this mess
+
 projectData = {}
 positionData = {}
 settingsData = {}
@@ -121,6 +123,7 @@ def resetManualOverride():
 def main(port):
 
     def loadData(data):
+
         try:
             platform.set(data['name'])
             imageVal.set(data['img'])
@@ -139,12 +142,15 @@ def main(port):
             onTimeDelayVal.set(data['onTimeDelay'])
             imageResizeAlg.set(data['resizeImgAlg'])
             positionImageAlg.set(data['positionImgAlg'])
+            dualColorModeVal.set(data['dualColorMode'])
         except KeyError:
             print("Error loading data")
         checkData()
         print('data loaded')
 
     def checkData():
+
+        
         try:
             if speedVal.get() == '':
                 speedVal.set(1)
@@ -187,6 +193,9 @@ def main(port):
         except tk.TclError:
             positionImageAlg.set(positionImgAlgs[0])
 
+            
+        
+
     def combineData():
         checkData()
         res = {
@@ -207,13 +216,15 @@ def main(port):
             "onTimeDelay": onTimeDelayVal.get(),
             "positionOverride": manualOverrideVal,
             "resizeImgAlg": imageResizeAlg.get(),
-            "positionImgAlg": positionImageAlg.get()
+            "positionImgAlg": positionImageAlg.get(),
+            "dualColorMode": dualColorModeVal.get()
         }
         return res
 
     def saveConfig():
         print('saving configuration')
         data = combineData()
+        data["img"] = "" # don't save image path or even worse, the base64 encoded image
         name = saveVal.get()
 
         if name == '':
@@ -302,6 +313,14 @@ def main(port):
     distance.grid(row=pos["row"], column=pos["col"])
 
     # checkboxes
+
+    # dualColorMode
+    pos = getRC(guiData, 'dualColorMode')
+    dualColorModeVal = tk.BooleanVar()
+    dualColorMode = tk.Checkbutton(root, text='Dual color mode', variable=dualColorModeVal)
+    dualColorMode.grid(row=pos["row"], column=pos["col"])
+
+
 
     # sort colors
     pos = getRC(guiData, 'sortColors')
@@ -392,7 +411,6 @@ def main(port):
     bucket = tk.Checkbutton(root, text='Bucket', variable=bucketVal)
     bucket.grid(row=pos["row"], column=pos["col"])
 
-    # todo: dither algorithm
 
     # ignore color
     # todo: add check for valid color

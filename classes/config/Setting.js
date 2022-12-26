@@ -28,7 +28,8 @@ module.exports = class Setting extends BaseConfig {
                 y1: 0,
                 x2: 0,
                 y2: 0
-            }
+            },
+            dualColorMode: false
         }
 
     }

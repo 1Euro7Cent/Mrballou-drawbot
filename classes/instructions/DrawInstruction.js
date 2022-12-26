@@ -6,11 +6,13 @@ module.exports = class DrawInstruction {
     /**
      * @param {"DOT" | "DRAG"| "DRAGNOTRELEASE" | "RELEASE"} type
      * @param {{x1:number,y1:number, x2?:number, y2?:number, delay?:number}} cords
-     * @param {string} comment
+     * @param {"left" | "right" | "middle"} [button]
+     * @param {string} [comment]
      */
-    constructor(type, cords, comment) {
+    constructor(type, cords, button = "left", comment = "none") {
         this.type = type
         this.cords = cords
+        this.button = button
         this.comment = comment
     }
 
@@ -23,25 +25,25 @@ module.exports = class DrawInstruction {
         switch (this.type) {
             case "DOT":
                 robot.moveMouse(this.cords.x1, this.cords.y1)
-                robot.mouseClick()
+                robot.mouseClick(this.button)
                 break
             case "DRAG":
                 if (this.cords.x2 && this.cords.y2) {
                     robot.moveMouse(this.cords.x1, this.cords.y1)
-                    robot.mouseToggle('down')
+                    robot.mouseToggle('down', this.button)
                     robot.moveMouse(this.cords.x2, this.cords.y2)
-                    robot.mouseToggle('up')
+                    robot.mouseToggle('up', this.button)
                 }
                 break
             case 'DRAGNOTRELEASE':
                 if (this.cords.x2 && this.cords.y2) {
                     robot.moveMouse(this.cords.x1, this.cords.y1)
-                    robot.mouseToggle('down')
+                    robot.mouseToggle('down', this.button)
                     robot.moveMouse(this.cords.x2, this.cords.y2)
                 }
                 break
             case 'RELEASE':
-                robot.mouseToggle('up')
+                robot.mouseToggle('up', this.button)
                 break
 
             default:

@@ -1,6 +1,6 @@
 {
   "name": "drawbot",
-  "version": "3.9.0",
+  "version": "3.10.1",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
@@ -26,15 +26,15 @@
   },
   "homepage": "https://github.com/1Euro7Cent/Mrballou-drawbot#readme",
   "dependencies": {
-    "express": "^4.18.1",
+    "express": "^4.18.2",
     "imagemaxsize": "^0.0.2",
-    "jimp": "^0.16.1",
-    "multidither": "^1.0.0",
+    "jimp": "^0.16.2",
+    "multidither": "^1.0.5",
     "nearest-rgba": "^1.0.0",
     "robotjs": "^0.6.0"
   },
   "devDependencies": {
-    "jszip": "^3.10.0",
+    "jszip": "^3.10.1",
     "pkg": "^5.7.0"
   }
 }

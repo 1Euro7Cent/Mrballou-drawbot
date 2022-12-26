@@ -37,6 +37,7 @@ module.exports = class InstructionWriter {
             this.debug.srCImage = img
         }
         let instructions = []
+        let ignoreColors = []
 
         let position = positions.getPlatform(this.settings.name)
 
@@ -239,9 +240,9 @@ module.exports = class InstructionWriter {
             x1: position.topleft.x,
             y1: position.topleft.y,
             delay: this.settings.delay
-        }, 'INIT_WINDOW'))
+        }, "left", 'INIT_WINDOW'))
 
-        let lastColor = null
+
         // bucket 
 
         if (this.settings.bucket) {
@@ -259,28 +260,28 @@ module.exports = class InstructionWriter {
                         x1: position.bucket.x,
                         y1: position.bucket.y,
                         delay: this.settings.delay
-                    }, 'SEL_BUCKET'))
+                    }, "left", 'SEL_BUCKET'))
 
                     let colPos = position.colors[largestColor]
                     instructions.push(new DrawInstruction('DOT', {
                         x1: colPos.x,
                         y1: colPos.y,
                         delay: this.settings.delay
-                    }, 'SEL_BUCKET_COL'))
+                    }, "left", 'SEL_BUCKET_COL'))
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.topleft.x + this.settings.distancing + offsets.x,
                         y1: position.topleft.y + this.settings.distancing + offsets.y,
                         delay: this.settings.delay
-                    }, 'DRAW_BUCKET'))
+                    }, "left", 'DRAW_BUCKET'))
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.pen.x,
                         y1: position.pen.y,
                         delay: this.settings.delay
-                    }, 'SEL_PEN'))
+                    }, "left", 'SEL_PEN'))
 
-                    lastColor = largestColor
+                    ignoreColors.push(largestColor)
                 }
             }
             else {
@@ -293,24 +294,87 @@ module.exports = class InstructionWriter {
          * @type {string[]}
          */
         let drawnPixels = []
+        let isSecondary = false
+        /**@type {string | undefined} */
+        let nextColor
 
 
-        console.log(`ignoring colors:`, settings.data.ignoreColors)
+        console.log(`ignoring colors:`, settings.data.ignoreColors.concat(ignoreColors))
         console.log("writing instructions...")
         console.time("write")
+        // console.log(colors)
         for (let color in colors) {
 
-            if (settings.data.ignoreColors.includes(color)) continue
-
-            if (this.debug) {
-                this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
-                // await this.debug.makeImage()
+            // skip a color after two has been drawn at once
+            if (this.settings.dualColorMode && isSecondary) {
+                isSecondary = false
+                continue
             }
+
+            // next color is the color that will be drawn after this one. that should NOT be a ignored color
+            nextColor = getNextKey(colors, color, settings.data.ignoreColors.concat(ignoreColors))
+
+
+
+            if (settings.data.ignoreColors.concat(ignoreColors).includes(color)) continue
+
+            // if (this.debug) {
+            //     this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
+            //     // await this.debug.makeImage()
+            // }
 
             drawnPixels = []
 
+
             process.stdout.write('    ')
-            console.timeLog("write", `writing color ${color}`)
+            console.timeLog("write", `writing color ${color} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`)
+            // console.log("next color", nextColor)
+
+
+            let pos = position.colors[color]
+
+
+
+
+            instructions.push(new DrawInstruction('DOT', {
+                x1: pos.x,
+                y1: pos.y,
+                delay: this.settings.delay + this.settings.colorDelay
+            },
+                "left", "SET_COLOR"))
+
+            if (this.settings.dualColorMode) {
+                if (nextColor) instructions.push(new DrawInstruction('DOT', {
+                    x1: position.secondaryColor.x,
+                    y1: position.secondaryColor.y,
+                    delay: this.settings.delay + this.settings.colorDelay
+                },
+                    "left", 'SEL_SECONDARY'))
+                else instructions.push(new DrawInstruction('DOT', {
+                    x1: position.primaryColor.x,
+                    y1: position.primaryColor.y,
+                    delay: this.settings.delay
+                },
+                    "left", 'SEL_PRIMARY'))
+
+                let posSecondary = position.colors[nextColor ?? color]
+
+                instructions.push(new DrawInstruction('DOT', {
+                    x1: posSecondary.x,
+                    y1: posSecondary.y,
+                    delay: this.settings.delay
+                },
+                    "left", "SET_COLOR"))
+
+                if (this.settings.dualColorMode) instructions.push(new DrawInstruction('DOT', {
+                    x1: position.primaryColor.x,
+                    y1: position.primaryColor.y,
+                    delay: this.settings.delay + this.settings.colorDelay
+                },
+                    "left", 'SEL_PRIMARY'))
+
+
+            }
 
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
@@ -319,20 +383,8 @@ module.exports = class InstructionWriter {
                     let rgba = Jimp.intToRGBA(numb)
                     let hex = rgbToHex(rgba)
 
-                    if (color != hex) continue
-                    if (!lastColor || hex !== lastColor) {
-                        lastColor = hex
-                        let pos = position.colors[hex]
-                        // console.log(pos)
-                        // console.log(hex)
-                        let instruction = new DrawInstruction('DOT', {
-                            x1: pos.x,
-                            y1: pos.y,
-                            delay: this.settings.delay + this.settings.colorDelay
-                        },
-                            "SET_COLOR")
-                        instructions.push(instruction)
-                    }
+                    if (this.settings.dualColorMode && !(color == hex || nextColor == hex)) continue
+                    if (!this.settings.dualColorMode && color != hex) continue
 
                     if (this.settings.fast) {
                         let looping = true
@@ -355,6 +407,7 @@ module.exports = class InstructionWriter {
 
                         if (this.settings.lineSaving && typeof foundPixels != 'undefined') continue
 
+
                         for (let fx = x; looping; fx++) {
 
                             let fnumb = recolored.getPixelColor(fx, fy)
@@ -370,7 +423,7 @@ module.exports = class InstructionWriter {
 
                             // if (pixels <= 0) break
 
-                            looping = fx < recolored.bitmap.width && looping
+                            looping = fx < recolored.bitmap.width - 1 && looping
                             if ((!this.settings.lineSaving) && (!looping)) {
                                 if (xPixels > 1) {
                                     let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
@@ -381,7 +434,7 @@ module.exports = class InstructionWriter {
                                         x2: pos2.x + offsets.x,
                                         y2: pos2.y + offsets.y,
                                         delay: this.settings.delay,
-                                    }, "DRAW_LINE"))
+                                    }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
                                 }
                                 else {
                                     let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
@@ -389,7 +442,7 @@ module.exports = class InstructionWriter {
                                         x1: pos.x + offsets.x,
                                         y1: pos.y + offsets.y,
                                         delay: this.settings.delay
-                                    }, "DRAW_PIXEL"))
+                                    }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
 
                                 }
                                 x = fx
@@ -397,6 +450,7 @@ module.exports = class InstructionWriter {
                             }
 
                         }
+
 
                         if (this.settings.lineSaving) {
                             looping = true
@@ -415,7 +469,7 @@ module.exports = class InstructionWriter {
 
                                 // if (pixels <= 0) break
 
-                                looping = fy < recolored.bitmap.height && looping
+                                looping = fy < recolored.bitmap.height - 1 && looping
                             }
                             let largest = Math.max(xPixels, yPixels)
                             if (largest > 1) {
@@ -429,7 +483,7 @@ module.exports = class InstructionWriter {
                                         x2: pos2.x + offsets.x,
                                         y2: pos2.y + offsets.y,
                                         delay: this.settings.delay,
-                                    }, "DRAW_LINE"))
+                                    }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
 
                                     let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
                                     this.debug?.drawnPixels.push(pixString)
@@ -451,7 +505,7 @@ module.exports = class InstructionWriter {
                                         x2: pos2.x + offsets.x,
                                         y2: pos2.y + offsets.y,
                                         delay: this.settings.delay,
-                                    }, "DRAW_LINE"))
+                                    }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
 
                                     // addLTodrawn(instructions, drawnPixels)
                                     let pixString = `${x}-${x},${y}-${y + (yPixels - 1)}`
@@ -467,7 +521,9 @@ module.exports = class InstructionWriter {
                                     x1: pos.x + offsets.x,
                                     y1: pos.y + offsets.y,
                                     delay: this.settings.delay
-                                }, "DRAW_PIXEL"))
+                                }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
+
+                                this.debug?.customPixels.push(`${x},${y}`)
                             }
 
                         }
@@ -479,16 +535,17 @@ module.exports = class InstructionWriter {
                             x1: pos.x + offsets.x,
                             y1: pos.y + offsets.y,
                             delay: this.settings.delay
-                        }, "DRAW_PIXEL")
+                        }, hex == nextColor ? "right" : "left", "DRAW_PIXEL")
                         instructions.push(instruction)
+                        this.debug?.customPixels.push(`${x},${y}`)
                     }
                 }
             }
 
+            isSecondary = !isSecondary
+
         }
-        console.log(`Done! Created ${instructions.length} instructions.`)
-        // console.timeLog()
-        console.timeEnd('write')
+
         // return
 
 
@@ -537,6 +594,10 @@ module.exports = class InstructionWriter {
 
         // remove every out of bounds
         instructions = instructions.filter(i => i.comment !== 'OUT_OF_BOUNDS')
+
+        console.log(`Done! Created ${instructions.length} instructions.`)
+        // console.timeLog()
+        console.timeEnd('write')
 
 
         if (this.debug) {
@@ -631,6 +692,27 @@ function absoluteToRelative(x, y, position, distancing, xModifyer = 0, yModifyer
         y: (y - position.topleft.y - (yModifyer * distancing)) / distancing
     }
 
+}
+
+/**
+ * @param {{}} obj
+ * @param {string} currentKey
+ * @param {string[]} ignoredKeys
+ * @returns {string | undefined}
+ */
+function getNextKey(obj, currentKey, ignoredKeys) {
+    // Get an array of the object's keys
+    let keys = Object.keys(obj)
+
+    // Filter the keys to exclude the ignored keys
+    let filteredKeys = keys.filter(key => !ignoredKeys.includes(key))
+
+    //remove all keys before the current key
+    let index = filteredKeys.indexOf(currentKey)
+    filteredKeys = filteredKeys.slice(index + 1)
+
+    // Return the next key, or undefined if no key was found
+    return filteredKeys[0]
 }
 
 

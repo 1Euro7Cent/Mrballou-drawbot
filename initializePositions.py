@@ -4,25 +4,43 @@ import pyautogui
 import sys
 
 
+def boolInput(question):
+    while True:
+        try:
+            return {"y": True, "n": False}[input(question + "(y/n) ").lower()]
+        except KeyError:
+            print("Invalid input please enter true or false")
+
 # this function writes the json with the position content
 filename = "positions.json"
 name = input("Please enter the name of the position preset: ")
 
-validBucket = False
-while not validBucket:
-    bucket = input("Has the position set a bucket? (y/n) ")
-    validBucket = bucket == "y" or bucket == "n"
+# validBucket = False
+# while not validBucket:
+#     bucket = input("Has the position set a bucket? (y/n) ")
+#     validBucket = bucket == "y" or bucket == "n"
+
+bucket = boolInput("Has the position set a bucket?")
+twoColors = boolInput("Can there be drawn with two colors? (left and right click)")
 
 
 positions = {
     name: {
         "topleft": {
-            "x": 0,
-            "y": 0
+            "x": -1,
+            "y": -1
         },
         "bottomright": {
-            "x": 0,
-            "y": 0
+            "x": -1,
+            "y": -1
+        },
+        "primaryColor": {
+            "x": -1,
+            "y": -1
+        },
+        "secondaryColor": {
+            "x": -1,
+            "y": -1
         },
         "bucket": {
             "x": -1,
@@ -41,8 +59,15 @@ positions = {
 status = "topleft"
 listener = ''
 
-if bucket == "y":
-    status = "bucket"
+if twoColors:
+    status = "primaryColor"
+else:
+
+    if bucket:
+        status = "bucket"
+
+
+
 
 
 def rgbToHex(r, g, b):
@@ -69,32 +94,43 @@ def onClick(x, y, button, pressed):
             return
 
         # print("Click: " + str(x) + " " + str(y) +" " + str(button) + " " + str(pressed))
+        if status == "primaryColor":
+            positions[name]["primaryColor"]["x"] = x
+            positions[name]["primaryColor"]["y"] = y
+            status = "secondaryColor"
+            return
+
+        if status == "secondaryColor":
+            positions[name]["secondaryColor"]["x"] = x
+            positions[name]["secondaryColor"]["y"] = y
+            if bucket:
+                status = "bucket"
+            else:
+                status = "topleft"
+            return
+
         if status == "bucket":
             positions[name]["bucket"]["x"] = x
             positions[name]["bucket"]["y"] = y
             status = "pen"
-            print('put the mouse at the tool that you want to use to draw and click')
             return
 
         if status == "pen":
             positions[name]["pen"]["x"] = x
             positions[name]["pen"]["y"] = y
             status = "topleft"
-            print('put the mouse at the top left of the drawing canvas and click')
             return
 
         if status == "topleft":
             positions[name]["topleft"]["x"] = x
             positions[name]["topleft"]["y"] = y
             status = "bottomright"
-            print('now at the bottom right')
             return
 
         if status == "bottomright":
             positions[name]["bottomright"]["x"] = x
             positions[name]["bottomright"]["y"] = y
             status = "colors"
-            print('and now over every printable color')
             return
 
         if status == "colors":
@@ -108,17 +144,31 @@ def onClick(x, y, button, pressed):
             }
             return
 
+    else: # button released
+        match status:   
+            case "primaryColor":
+                print('put the mouse at the primary color and click')
+            case "secondaryColor":
+                print('put the mouse at the secondary color and click')
+            case "bucket":
+                print('click on the bucket')
+            case "pen":
+                print('put the mouse at the tool that you want to use to draw and click')
+            case "topleft":
+                print('put the mouse at the top left of the drawing canvas and click')
+            case "bottomright":
+                print('now at the bottom right')
+            case "colors":
+                print('and now over every printable color')
 
 def main():
     with mouse.Listener(on_click=onClick) as l:
         global listener
         listener = l
 
-        print('you can abort that process by pressing right lick')
-        if bucket == "y":
-            print('click on the bucket')
-        else:
-            print('put the mouse at the top left of the drawing canvas and click')
+        onClick(-1, -1, mouse.Button.left, False) # trigger the first message
+
+
         l.join()
 
 

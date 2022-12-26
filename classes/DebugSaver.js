@@ -22,6 +22,11 @@ module.exports = class DebugSaver {
          * @type {Jimp | null}
          */
         this.srCImage = null
+
+        /**
+         * @type {string[]}
+         */
+        this.customPixels = []
     }
 
     /**
@@ -30,6 +35,7 @@ module.exports = class DebugSaver {
      */
     async makeImage(custom = undefined) {
         if (typeof custom == "string") custom = [custom]
+        this.customPixels = this.customPixels.concat(custom ?? [])
         if (this.srCImage != null) {
             let tempImage = this.srCImage.clone()
 
