@@ -2,3 +2,4 @@ requests>=2.27.1
 pynput>=1.7.6
 pyautogui>=0.9.53
 pyinstaller>=5.1
+customtkinter>=5.0.4
