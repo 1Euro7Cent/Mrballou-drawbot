@@ -1,6 +1,6 @@
 {
-  "name": "drawbot",
-  "version": "3.10.1",
+  "name": "Drawbot",
+  "version": "3.11.0",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
@@ -31,6 +31,7 @@
     "jimp": "^0.16.2",
     "multidither": "^1.0.5",
     "nearest-rgba": "^1.0.0",
+    "progress": "^2.0.3",
     "robotjs": "^0.6.0"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 from pynput import keyboard, mouse
-import tkinter as tk
+# import tkinter as tk
+import customtkinter as tk
 import json
 import threading
 import sys
@@ -266,6 +267,9 @@ def main(port):
 
     def startDraw():
         print('starting draw')
+        if not isServerRunning():
+            print('server not running')
+            return
 
         data = combineData()
         with open('settings.json', 'w') as f:
@@ -273,13 +277,35 @@ def main(port):
 
         requests.post('http://localhost:' + str(port) + '/draw')
 
-    projectData = getData("package.json")
+    def isServerRunning():
+        try:
+            getFromSerer('version')
+            return True
+        except:
+            return False
+
+    def getFromSerer(path):
+        print('getting data /' + path +' from server')
+        res = requests.get('http://localhost:' + str(port) + '/' + path)
+        
+        return res.text
+    
+    versionCode = ""
+    try:
+        versionCode = getFromSerer('version')
+    
+    except:
+        print('server not running')
+        exit()
+
+
+    
     positionData = getData("positions.json")
     settingsData = getData("settings.json")
     guiData = getData("guiConfig.json")
 
-    root = tk.Tk()
-    root.title(projectData['name'])
+    root = tk.CTk()
+    root.title(getFromSerer('guiName'))
     # root.geometry('200x200')
 
     pos = {
@@ -289,26 +315,26 @@ def main(port):
     # setting platform to draw
 
     pos = getRC(guiData, 'platformText')
-    tk.Label(root, text='Platform').grid(row=pos["row"], column=pos["col"])
+    tk.CTkLabel(root, text='Platform').grid(row=pos["row"], column=pos["col"])
     platform = tk.StringVar(root)
     platforms = getPlatforms(positionData)
-    platformOpts = tk.OptionMenu(root, platform, *platforms)
+    platformOpts = tk.CTkOptionMenu(root, variable=platform, values=platforms)
     pos = getRC(guiData, 'platform')
     platformOpts.grid(row=pos["row"], column=pos["col"])
 
     # speed
     pos = getRC(guiData, 'delayText')
     speedVal = tk.StringVar(root)
-    tk.Label(root, text='Delay').grid(row=pos["row"], column=pos["col"])
-    speed = tk.Entry(root, textvariable=speedVal)
+    tk.CTkLabel(root, text='Delay').grid(row=pos["row"], column=pos["col"])
+    speed = tk.CTkEntry(root, textvariable=speedVal)
     pos = getRC(guiData, 'delay')
     speed.grid(row=pos["row"], column=pos["col"])
 
     # distancing
     pos = getRC(guiData, 'distanceText')
     distanceVal = tk.StringVar(root)
-    tk.Label(root, text='Distance').grid(row=pos["row"], column=pos["col"])
-    distance = tk.Entry(root, textvariable=distanceVal)
+    tk.CTkLabel(root, text='Distance').grid(row=pos["row"], column=pos["col"])
+    distance = tk.CTkEntry(root, textvariable=distanceVal)
     pos = getRC(guiData, 'distance')
     distance.grid(row=pos["row"], column=pos["col"])
 
@@ -317,7 +343,7 @@ def main(port):
     # dualColorMode
     pos = getRC(guiData, 'dualColorMode')
     dualColorModeVal = tk.BooleanVar()
-    dualColorMode = tk.Checkbutton(root, text='Dual color mode', variable=dualColorModeVal)
+    dualColorMode = tk.CTkCheckBox(root, text='Dual color mode', variable=dualColorModeVal)
     dualColorMode.grid(row=pos["row"], column=pos["col"])
 
 
@@ -325,82 +351,82 @@ def main(port):
     # sort colors
     pos = getRC(guiData, 'sortColors')
     sortVal = tk.BooleanVar()
-    sort = tk.Checkbutton(root, text='Sort colors', variable=sortVal)
+    sort = tk.CTkCheckBox(root, text='Sort colors', variable=sortVal)
     sort.grid(row=pos["row"], column=pos["col"])
 
     # color sort alg
     pos = getRC(guiData, 'sortColorsAlgorithmText')
-    tk.Label(root, text='Sort colors alg').grid(
+    tk.CTkLabel(root, text='Sort colors alg').grid(
         row=pos["row"], column=pos["col"])
     sortColAlg = tk.StringVar(root)
 
-    sortColAlgOpts = tk.OptionMenu(root, sortColAlg, *sortColAlgs)
+    sortColAlgOpts = tk.CTkOptionMenu(root, variable=sortColAlg, values=sortColAlgs)
     pos = getRC(guiData, 'sortColorsAlgorithm')
     sortColAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # image resize alg
     pos = getRC(guiData, 'resizeImageAlgorithmText')
-    tk.Label(root, text='Image resize alg').grid(
+    tk.CTkLabel(root, text='Image resize alg').grid(
         row=pos["row"], column=pos["col"])
 
     imageResizeAlg = tk.StringVar(root)
-    imageResizeAlgOpts = tk.OptionMenu(root, imageResizeAlg, *resizeImgAlgs)
+    imageResizeAlgOpts = tk.CTkOptionMenu(root, variable=imageResizeAlg, values=resizeImgAlgs)
     pos = getRC(guiData, 'resizeImageAlgorithm')
     imageResizeAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # position image alg
     pos = getRC(guiData, 'positionImageAlgorithmText')
-    tk.Label(root, text='Position image alg').grid(
+    tk.CTkLabel(root, text='Position image alg').grid(
         row=pos["row"], column=pos["col"])
 
     positionImageAlg = tk.StringVar(root)
-    positionImageAlgOpts = tk.OptionMenu(
-        root, positionImageAlg, *positionImgAlgs)
+    positionImageAlgOpts = tk.CTkOptionMenu(
+        root, variable=positionImageAlg, values=positionImgAlgs)
     pos = getRC(guiData, 'positionImageAlgorithm')
     positionImageAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # dither
     pos = getRC(guiData, 'dither')
     ditherVal = tk.BooleanVar()
-    dither = tk.Checkbutton(root, text='Dither', variable=ditherVal)
+    dither = tk.CTkCheckBox(root, text='Dither', variable=ditherVal)
     dither.grid(row=pos["row"], column=pos["col"])
 
     # dither alg
     pos = getRC(guiData, 'ditherAlgorithmText')
-    tk.Label(root, text='dither alg').grid(
+    tk.CTkLabel(root, text='dither alg').grid(
         row=pos["row"], column=pos["col"])
     ditherAlg = tk.StringVar(root)
 
-    ditherAlgOpts = tk.OptionMenu(root, ditherAlg, *ditherAlgs)
+    ditherAlgOpts = tk.CTkOptionMenu(root, variable=ditherAlg, values=ditherAlgs)
     pos = getRC(guiData, 'ditherAlgorithm')
     ditherAlgOpts.grid(row=pos["row"], column=pos["col"])
 
     # fast mode
     pos = getRC(guiData, 'fastMode')
     fastVal = tk.BooleanVar()
-    fast = tk.Checkbutton(root, text='Fast mode', variable=fastVal)
+    fast = tk.CTkCheckBox(root, text='Fast mode', variable=fastVal)
     fast.grid(row=pos["row"], column=pos["col"])
 
     # line saving mode
     pos = getRC(guiData, 'lineSavingMode')
     lineSavingVal = tk.BooleanVar()
-    lineSaving = tk.Checkbutton(
+    lineSaving = tk.CTkCheckBox(
         root, text='Line saving mode', variable=lineSavingVal)
     lineSaving.grid(row=pos["row"], column=pos["col"])
 
     # on time delay
     pos = getRC(guiData, 'onTimeDelayMode')
     onTimeDelayVal = tk.BooleanVar()
-    onTimeDelay = tk.Checkbutton(
+    onTimeDelay = tk.CTkCheckBox(
         root, text="on time delay mode", variable=onTimeDelayVal)
     onTimeDelay.grid(row=pos["row"], column=pos["col"])
 
     # on time delay threshold
     pos = getRC(guiData, 'onTimeDelayText')
     onTimeDelayMultiplyerVal = tk.StringVar(root)
-    tk.Label(root, text='On time delay multiplyer').grid(
+    tk.CTkLabel(root, text='On time delay multiplyer').grid(
         row=pos["row"], column=pos["col"])
-    onTimeDelayMultiplyer = tk.Entry(
+    onTimeDelayMultiplyer = tk.CTkEntry(
         root, textvariable=onTimeDelayMultiplyerVal)
     pos = getRC(guiData, 'onTimeDelayMultiplyer')
     onTimeDelayMultiplyer.grid(row=pos["row"], column=pos["col"])
@@ -408,7 +434,7 @@ def main(port):
     # bucket
     pos = getRC(guiData, 'bucket')
     bucketVal = tk.BooleanVar()
-    bucket = tk.Checkbutton(root, text='Bucket', variable=bucketVal)
+    bucket = tk.CTkCheckBox(root, text='Bucket', variable=bucketVal)
     bucket.grid(row=pos["row"], column=pos["col"])
 
 
@@ -416,59 +442,59 @@ def main(port):
     # todo: add check for valid color
     # todo: add to settings
     pos = getRC(guiData, 'ignoreColorText')
-    tk.Label(root, text='Ignore color').grid(row=pos["row"], column=pos["col"])
-    ignore = tk.Entry(root)
+    tk.CTkLabel(root, text='Ignore color').grid(row=pos["row"], column=pos["col"])
+    ignore = tk.CTkEntry(root)
     pos = getRC(guiData, 'ignoreColor')
     ignore.grid(row=pos["row"], column=pos["col"])
 
     # max lines
     pos = getRC(guiData, 'maxLinesText')
     maxLinesVal = tk.IntVar(root)
-    tk.Label(root, text='Max lines').grid(row=pos["row"], column=pos["col"])
-    maxLines = tk.Entry(root, textvariable=maxLinesVal)
+    tk.CTkLabel(root, text='Max lines').grid(row=pos["row"], column=pos["col"])
+    maxLines = tk.CTkEntry(root, textvariable=maxLinesVal)
     pos = getRC(guiData, 'maxLines')
     maxLines.grid(row=pos["row"], column=pos["col"])
 
     # delay between colors
     pos = getRC(guiData, 'colorDelayText')
     colorDelayVal = tk.StringVar(root)
-    tk.Label(root, text='Delay between colors').grid(
+    tk.CTkLabel(root, text='Delay between colors').grid(
         row=pos["row"], column=pos["col"])
-    colorDelay = tk.Entry(root, textvariable=colorDelayVal)
+    colorDelay = tk.CTkEntry(root, textvariable=colorDelayVal)
     pos = getRC(guiData, 'colorDelay')
     colorDelay.grid(row=pos["row"], column=pos["col"])
 
     # image
     pos = getRC(guiData, 'imageUrlText')
     imageVal = tk.StringVar(root)
-    tk.Label(root, text='Image URL').grid(row=pos["row"], column=pos["col"])
-    image = tk.Entry(root, textvariable=imageVal)
+    tk.CTkLabel(root, text='Image URL').grid(row=pos["row"], column=pos["col"])
+    image = tk.CTkEntry(root, textvariable=imageVal)
     pos = getRC(guiData, 'imageUrl')
     image.grid(row=pos["row"], column=pos["col"])
 
     # draw button
     pos = getRC(guiData, 'drawButton')
-    tk.Button(root, text='Draw', command=startDraw).grid(
+    tk.CTkButton(root, text='Draw', command=startDraw).grid(
         row=pos["row"], column=pos["col"])
 
     # save / load configurations
     # save
-    # tk.Label(root, text='Save configuration').grid(row=10, column=0)
+    # tk.CTkLabel(root, text='Save configuration').grid(row=10, column=0)
     pos = getRC(guiData, 'saveConfigButton')
     saveVal = tk.StringVar(root)
-    tk.Button(root, text='Save config',
+    tk.CTkButton(root, text='Save config',
               command=saveConfig).grid(row=pos["row"], column=pos["col"])
-    save = tk.Entry(root, textvariable=saveVal)
+    save = tk.CTkEntry(root, textvariable=saveVal)
     pos = getRC(guiData, 'saveConfig')
     save.grid(row=pos["row"], column=pos["col"])
 
     # load
     pos = getRC(guiData, 'loadConfigButton')
-    tk.Button(root, text='Load config',
+    tk.CTkButton(root, text='Load config',
               command=lambda: loadData(getSaveData(loadVal.get()))).grid(row=pos["row"], column=pos["col"])
 
     loadVal = tk.StringVar(root)
-    load = tk.OptionMenu(root, loadVal, *getSaves())
+    load = tk.CTkOptionMenu(root, variable=loadVal, values=getSaves())
     pos = getRC(guiData, 'loadConfig')
     load.grid(row=pos["row"], column=pos["col"])
 
@@ -476,15 +502,15 @@ def main(port):
 
     pos = getRC(guiData, 'manualOverrideButton')
 
-    tk.Button(root, text='Manual override', command=lambda: manualOverride()).grid(
+    tk.CTkButton(root, text='Manual override', command=lambda: manualOverride()).grid(
         row=pos["row"], column=pos["col"])
 
     pos = getRC(guiData, 'manualOverrideResetButton')
-    tk.Button(root, text='Reset manual override', command=lambda: resetManualOverride(
+    tk.CTkButton(root, text='Reset manual override', command=lambda: resetManualOverride(
     )).grid(row=pos["row"], column=pos["col"])
 
     # version
-    version = tk.Label(root, text="Version: " + projectData["version"])
+    version = tk.CTkLabel(root, text="Version: " + versionCode)
     version.grid()
 
     loadData(settingsData)

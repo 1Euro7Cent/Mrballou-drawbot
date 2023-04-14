@@ -55,6 +55,21 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
 
 ## FAQ:
 
+* Does the bot work on katura?
+  + Yes, but also no. It works, but the website is really slow, and you need to crank up the delay.
+  
+    I recommend settings like:
+    - delay: `15`
+    - sort colors by: `size 9-0`
+    - onTimeDelayMultiplyer: `0.6` (this makes it really slow but work)
+    - fast: `yes`
+    - line save: `yes`
+    
+    feel free to suggest other settings
+
+* I have a "ConnectionError" please fix.
+  + Is the server running? Since version `3.11.0` it tells you that in the console
+
 * If the GUI instantly crashes, try running the drawbot.exe and then the GUI. The drawbot.exe creates all necessary files for the GUI to work.
 * The override position works like this:
   + press the override button.
