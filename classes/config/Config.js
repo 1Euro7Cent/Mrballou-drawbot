@@ -10,6 +10,14 @@ module.exports = class Config extends BaseConfig {
             port: 25600,
             prettifyData: false,
             abortKey: 'q',
+            progressBar: {
+                enabled: true,
+                width: null, // suse default width
+                head: '>',
+                complete: '=',
+                incomplete: ' ',
+                renderThrottle: 100 // 100 ms until next render
+            },
             debug: {
                 enabled: false,
                 saveWrite: {

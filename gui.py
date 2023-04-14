@@ -267,6 +267,9 @@ def main(port):
 
     def startDraw():
         print('starting draw')
+        if not isServerRunning():
+            print('server not running')
+            return
 
         data = combineData()
         with open('settings.json', 'w') as f:
@@ -274,13 +277,35 @@ def main(port):
 
         requests.post('http://localhost:' + str(port) + '/draw')
 
-    projectData = getData("package.json")
+    def isServerRunning():
+        try:
+            getFromSerer('version')
+            return True
+        except:
+            return False
+
+    def getFromSerer(path):
+        print('getting data /' + path +' from server')
+        res = requests.get('http://localhost:' + str(port) + '/' + path)
+        
+        return res.text
+    
+    versionCode = ""
+    try:
+        versionCode = getFromSerer('version')
+    
+    except:
+        print('server not running')
+        exit()
+
+
+    
     positionData = getData("positions.json")
     settingsData = getData("settings.json")
     guiData = getData("guiConfig.json")
 
     root = tk.CTk()
-    root.title(projectData['name'])
+    root.title(getFromSerer('guiName'))
     # root.geometry('200x200')
 
     pos = {
@@ -485,7 +510,7 @@ def main(port):
     )).grid(row=pos["row"], column=pos["col"])
 
     # version
-    version = tk.CTkLabel(root, text="Version: " + projectData["version"])
+    version = tk.CTkLabel(root, text="Version: " + versionCode)
     version.grid()
 
     loadData(settingsData)

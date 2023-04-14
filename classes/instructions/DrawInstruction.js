@@ -22,13 +22,18 @@ module.exports = class DrawInstruction {
             console.log(this)
             throw new Error(`Cords are not numbers`)
         }
+        if (this.cords.x1 == -1 || this.cords.y1 == -1) return
+
         switch (this.type) {
             case "DOT":
+                if (this.cords.x1 == -1 || this.cords.y1 == -1) break
                 robot.moveMouse(this.cords.x1, this.cords.y1)
                 robot.mouseClick(this.button)
                 break
             case "DRAG":
+
                 if (this.cords.x2 && this.cords.y2) {
+                    if (this.cords.x2 == -1 || this.cords.y2 == -1) break
                     robot.moveMouse(this.cords.x1, this.cords.y1)
                     robot.mouseToggle('down', this.button)
                     robot.moveMouse(this.cords.x2, this.cords.y2)
@@ -37,6 +42,8 @@ module.exports = class DrawInstruction {
                 break
             case 'DRAGNOTRELEASE':
                 if (this.cords.x2 && this.cords.y2) {
+                    if (this.cords.x2 == -1 || this.cords.y2 == -1) break
+
                     robot.moveMouse(this.cords.x1, this.cords.y1)
                     robot.mouseToggle('down', this.button)
                     robot.moveMouse(this.cords.x2, this.cords.y2)

@@ -7,6 +7,16 @@ const Setting = require('./classes/config/Setting')
 const Positions = require('./classes/config/Positions')
 const GuiConfig = require('./classes/config/GuiConfig')
 
+
+let package = {} // DON'T CHANGE THIS LINE OTHERWISE THE BUILD WILL NOT SUCCEED
+
+try {
+    package = require('./package.json')
+}
+catch (e) {
+    console.log("Couldn't get package.json.")
+}
+
 let config_ = new Config(undefined, true)
 config_.fromFile('./config.json')
 config_.save('./config.json')
@@ -47,7 +57,7 @@ guiConfig.save('./guiConfig.json')
 
 let app = express()
 
-app.post('/draw', (req, res) => {
+app.post('/draw', async (req, res) => {
     res.send()
     // delete aborting file
     if (fs.existsSync(config.temp + config.abortingFile)) {
@@ -62,8 +72,24 @@ app.post('/draw', (req, res) => {
     position.save('./positions.json')
 
 
-    drawManager.startDraw(setting, position)
+    await drawManager.startDraw(setting, position)
+    drawManager.state = "idle"
 })
+
+app.get("/version", (req, res) => {
+    console.log("got version request")
+    res.send(package.version)
+})
+
+app.get("/guiName", (req, res) => {
+    console.log("got guiName request")
+    res.send(package.name)
+})
+
+app.get("/state", (req, res) => {
+    res.send(drawManager.state)
+})
+
 
 app.listen(config.port, () => {
     console.log(`listening on port ${config.port}`)

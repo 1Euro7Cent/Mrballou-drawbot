@@ -1,6 +1,7 @@
 node_modules
 config.json
 temp
+*.temp.js
 pnpm-lock.yaml
 
 settings.json
