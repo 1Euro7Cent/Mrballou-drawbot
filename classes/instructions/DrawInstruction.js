@@ -5,7 +5,7 @@ module.exports = class DrawInstruction {
 
     /**
      * @param {"DOT" | "DRAG"| "DRAGNOTRELEASE" | "RELEASE"} type
-     * @param {{x1:number,y1:number, x2?:number, y2?:number, delay?:number}} cords
+     * @param {{x1:number,y1:number, x2?:number, y2?:number, delay?:number, moveDelay?:number}} cords
      * @param {"left" | "right" | "middle"} [button]
      * @param {string} [comment]
      */
@@ -28,7 +28,10 @@ module.exports = class DrawInstruction {
             case "DOT":
                 if (this.cords.x1 == -1 || this.cords.y1 == -1) break
                 robot.moveMouse(this.cords.x1, this.cords.y1)
-                robot.mouseClick(this.button)
+                // robot.mouseClick(this.button)
+                robot.mouseToggle('down', this.button)
+                await sleep(this.cords.moveDelay ?? 0)
+                robot.mouseToggle('up', this.button)
                 break
             case "DRAG":
 
@@ -36,7 +39,10 @@ module.exports = class DrawInstruction {
                     if (this.cords.x2 == -1 || this.cords.y2 == -1) break
                     robot.moveMouse(this.cords.x1, this.cords.y1)
                     robot.mouseToggle('down', this.button)
+                    await sleep(this.cords.moveDelay ?? 0)
+                    robot.setMouseDelay(this.cords.moveDelay ?? 0)
                     robot.moveMouse(this.cords.x2, this.cords.y2)
+                    robot.setMouseDelay(0)
                     robot.mouseToggle('up', this.button)
                 }
                 break
@@ -46,7 +52,10 @@ module.exports = class DrawInstruction {
 
                     robot.moveMouse(this.cords.x1, this.cords.y1)
                     robot.mouseToggle('down', this.button)
+                    await sleep(this.cords.moveDelay ?? 0)
+                    robot.setMouseDelay(this.cords.moveDelay ?? 0)
                     robot.moveMouse(this.cords.x2, this.cords.y2)
+                    robot.setMouseDelay(0)
                 }
                 break
             case 'RELEASE':

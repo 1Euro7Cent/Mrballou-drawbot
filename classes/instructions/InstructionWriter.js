@@ -239,7 +239,8 @@ module.exports = class InstructionWriter {
         instructions.push(new DrawInstruction('DOT', {
             x1: position.topleft.x,
             y1: position.topleft.y,
-            delay: this.settings.delay
+            delay: this.settings.delay,
+            moveDelay: this.settings.moveDelay
         }, "left", 'INIT_WINDOW'))
 
 
@@ -259,26 +260,30 @@ module.exports = class InstructionWriter {
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.bucket.x,
                         y1: position.bucket.y,
-                        delay: this.settings.delay
+                        delay: this.settings.delay,
+                        moveDelay: this.settings.moveDelay
                     }, "left", 'SEL_BUCKET'))
 
                     let colPos = position.colors[largestColor]
                     instructions.push(new DrawInstruction('DOT', {
                         x1: colPos.x,
                         y1: colPos.y,
-                        delay: this.settings.delay
+                        delay: this.settings.delay,
+                        moveDelay: this.settings.moveDelay
                     }, "left", 'SEL_BUCKET_COL'))
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.topleft.x + this.settings.distancing + offsets.x,
                         y1: position.topleft.y + this.settings.distancing + offsets.y,
-                        delay: this.settings.delay
+                        delay: this.settings.delay,
+                        moveDelay: this.settings.moveDelay
                     }, "left", 'DRAW_BUCKET'))
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.pen.x,
                         y1: position.pen.y,
-                        delay: this.settings.delay
+                        delay: this.settings.delay,
+                        moveDelay: this.settings.moveDelay
                     }, "left", 'SEL_PEN'))
 
                     ignoreColors.push(largestColor)
@@ -339,7 +344,8 @@ module.exports = class InstructionWriter {
             instructions.push(new DrawInstruction('DOT', {
                 x1: pos.x,
                 y1: pos.y,
-                delay: this.settings.delay + this.settings.colorDelay
+                delay: this.settings.delay + this.settings.colorDelay,
+                moveDelay: this.settings.moveDelay
             },
                 "left", "SET_COLOR"))
 
@@ -347,13 +353,15 @@ module.exports = class InstructionWriter {
                 if (nextColor) instructions.push(new DrawInstruction('DOT', {
                     x1: position.secondaryColor.x,
                     y1: position.secondaryColor.y,
-                    delay: this.settings.delay + this.settings.colorDelay
+                    delay: this.settings.delay + this.settings.colorDelay,
+                    moveDelay: this.settings.moveDelay
                 },
                     "left", 'SEL_SECONDARY'))
                 else instructions.push(new DrawInstruction('DOT', {
                     x1: position.primaryColor.x,
                     y1: position.primaryColor.y,
-                    delay: this.settings.delay
+                    delay: this.settings.delay,
+                    moveDelay: this.settings.moveDelay
                 },
                     "left", 'SEL_PRIMARY'))
 
@@ -362,14 +370,16 @@ module.exports = class InstructionWriter {
                 instructions.push(new DrawInstruction('DOT', {
                     x1: posSecondary.x,
                     y1: posSecondary.y,
-                    delay: this.settings.delay
+                    delay: this.settings.delay,
+                    moveDelay: this.settings.moveDelay
                 },
                     "left", "SET_COLOR"))
 
                 if (this.settings.dualColorMode) instructions.push(new DrawInstruction('DOT', {
                     x1: position.primaryColor.x,
                     y1: position.primaryColor.y,
-                    delay: this.settings.delay + this.settings.colorDelay
+                    delay: this.settings.delay + this.settings.colorDelay,
+                    moveDelay: this.settings.moveDelay
                 },
                     "left", 'SEL_PRIMARY'))
 
@@ -434,6 +444,7 @@ module.exports = class InstructionWriter {
                                         x2: pos2.x + offsets.x,
                                         y2: pos2.y + offsets.y,
                                         delay: this.settings.delay,
+                                        moveDelay: this.settings.moveDelay
                                     }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
                                 }
                                 else {
@@ -441,7 +452,8 @@ module.exports = class InstructionWriter {
                                     instructions.push(new DrawInstruction('DOT', {
                                         x1: pos.x + offsets.x,
                                         y1: pos.y + offsets.y,
-                                        delay: this.settings.delay
+                                        delay: this.settings.delay,
+                                        moveDelay: this.settings.moveDelay
                                     }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
 
                                 }
@@ -483,6 +495,7 @@ module.exports = class InstructionWriter {
                                         x2: pos2.x + offsets.x,
                                         y2: pos2.y + offsets.y,
                                         delay: this.settings.delay,
+                                        moveDelay: this.settings.moveDelay
                                     }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
 
                                     let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
@@ -505,6 +518,7 @@ module.exports = class InstructionWriter {
                                         x2: pos2.x + offsets.x,
                                         y2: pos2.y + offsets.y,
                                         delay: this.settings.delay,
+                                        moveDelay: this.settings.moveDelay
                                     }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
 
                                     // addLTodrawn(instructions, drawnPixels)
@@ -520,7 +534,8 @@ module.exports = class InstructionWriter {
                                 instructions.push(new DrawInstruction('DOT', {
                                     x1: pos.x + offsets.x,
                                     y1: pos.y + offsets.y,
-                                    delay: this.settings.delay
+                                    delay: this.settings.delay,
+                                    moveDelay: this.settings.moveDelay
                                 }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
 
                                 this.debug?.customPixels.push(`${x},${y}`)
@@ -534,7 +549,8 @@ module.exports = class InstructionWriter {
                         let instruction = new DrawInstruction('DOT', {
                             x1: pos.x + offsets.x,
                             y1: pos.y + offsets.y,
-                            delay: this.settings.delay
+                            delay: this.settings.delay,
+                            moveDelay: this.settings.moveDelay
                         }, hex == nextColor ? "right" : "left", "DRAW_PIXEL")
                         instructions.push(instruction)
                         this.debug?.customPixels.push(`${x},${y}`)

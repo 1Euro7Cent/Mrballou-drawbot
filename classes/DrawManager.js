@@ -98,7 +98,34 @@ module.exports = class DrawManager {
 
         console.log(`resizing to ${size.w}x${size.h}`)
         // @ts-ignore
-        let resized = await this.resizer.resize(img, size, settings.data.resizeImgAlg)
+        // let resized = await this.resizer.resize(img, size, settings.data.resizeImgAlg)
+
+        /**
+         * @type {Jimp}
+         */
+        let resized
+
+        if (settings.data.resizeImgAlg == "fit") {
+            console.log("calculating optimal sizes")
+            let orRatio = img.bitmap.width / img.bitmap.height
+            let ratio = size.w / size.h
+
+            if (ratio > orRatio) {
+                // size.h = size.h
+                size.w = size.h * orRatio
+            }
+            else {
+                // size.w = size.w
+                size.h = size.w / orRatio
+            }
+
+            console.log(`recalculated sizes to max ${size.w}x${size.h}`)
+            resized = await this.resizer.resize(img, size, "stretch") // we calculated the optimal sizes already. the module does not need to do it again
+        }
+        // @ts-ignore
+        else resized = await this.resizer.resize(img, size, settings.data.resizeImgAlg)
+
+        // let resized = await img.resize(size.w, size.h)
 
         await resized.writeAsync(this.config.temp + 'resized.png')
 

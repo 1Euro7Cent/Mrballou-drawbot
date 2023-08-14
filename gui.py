@@ -136,6 +136,7 @@ def main(port):
             bucketVal.set(data['bucket'])
             maxLinesVal.set(data['maxLines'])
             colorDelayVal.set(data['colorDelay'])
+            moveDelayVal.set(data['moveDelay'])
             sortColAlg.set(data['sortColAlg'])
             ditherAlg.set(data['ditherAlg'])
             lineSavingVal.set(data['lineSaving'])
@@ -177,6 +178,12 @@ def main(port):
             colorDelayVal.set(1)
 
         try:
+            if moveDelayVal.get() == '':
+                moveDelayVal.set(1)
+        except tk.TclError:
+            moveDelayVal.set(1)
+
+        try:
             if onTimeDelayMultiplyerVal.get() == '':
                 onTimeDelayMultiplyerVal.set(0)
         except tk.TclError:
@@ -210,6 +217,7 @@ def main(port):
             "bucket": bucketVal.get(),
             "maxLines": int(maxLinesVal.get()),
             "colorDelay": float(colorDelayVal.get()),
+            "moveDelay": float(moveDelayVal.get()),
             "sortColAlg": sortColAlg.get(),
             "ditherAlg": ditherAlg.get(),
             "lineSaving": lineSavingVal.get(),
@@ -463,6 +471,15 @@ def main(port):
     colorDelay = tk.CTkEntry(root, textvariable=colorDelayVal)
     pos = getRC(guiData, 'colorDelay')
     colorDelay.grid(row=pos["row"], column=pos["col"])
+
+    # moveDelay
+    pos = getRC(guiData, 'moveDelayText')
+    moveDelayVal = tk.StringVar(root)
+    tk.CTkLabel(root, text='Press delay').grid(
+        row=pos["row"], column=pos["col"])
+    moveDelay = tk.CTkEntry(root, textvariable=moveDelayVal)
+    pos = getRC(guiData, 'moveDelay')
+    moveDelay.grid(row=pos["row"], column=pos["col"])
 
     # image
     pos = getRC(guiData, 'imageUrlText')

@@ -22,6 +22,7 @@ module.exports = class GuiConfig extends BaseConfig {
             ["ignoreColorText", "ignoreColor"],
             ["maxLinesText", "maxLines"],
             ["colorDelayText", "colorDelay"],
+            ["moveDelayText", "moveDelay"],
             ["saveConfigButton", "saveConfig"],
             ["loadConfigButton", "loadConfig"],
             ["manualOverrideButton", "manualOverrideResetButton"],
