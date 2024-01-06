@@ -308,144 +308,279 @@ module.exports = class InstructionWriter {
         console.log("writing instructions...")
         console.time("write")
         // console.log(colors)
-        for (let color in colors) {
-
-            // skip a color after two has been drawn at once
-            if (this.settings.dualColorMode && isSecondary) {
-                isSecondary = false
-                continue
-            }
-
-            // next color is the color that will be drawn after this one. that should NOT be a ignored color
-            nextColor = getNextKey(colors, color, settings.data.ignoreColors.concat(ignoreColors))
-
-
-
-            if (settings.data.ignoreColors.concat(ignoreColors).includes(color)) continue
-
-            // if (this.debug) {
-            //     this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
-            //     // await this.debug.makeImage()
-            // }
-
-            drawnPixels = []
-
-
-            process.stdout.write('    ')
-            console.timeLog("write", `writing color ${color} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`)
-            // console.log("next color", nextColor)
-
-
-            let pos = position.colors[color]
-
-
-
-
-            instructions.push(new DrawInstruction('DOT', {
-                x1: pos.x,
-                y1: pos.y,
-                delay: this.settings.delay + this.settings.colorDelay,
-                moveDelay: this.settings.moveDelay
-            },
-                "left", "SET_COLOR"))
-
-            if (this.settings.dualColorMode) {
-                if (nextColor) instructions.push(new DrawInstruction('DOT', {
-                    x1: position.secondaryColor.x,
-                    y1: position.secondaryColor.y,
-                    delay: this.settings.delay + this.settings.colorDelay,
-                    moveDelay: this.settings.moveDelay
-                },
-                    "left", 'SEL_SECONDARY'))
-                else instructions.push(new DrawInstruction('DOT', {
-                    x1: position.primaryColor.x,
-                    y1: position.primaryColor.y,
-                    delay: this.settings.delay,
-                    moveDelay: this.settings.moveDelay
-                },
-                    "left", 'SEL_PRIMARY'))
-
-                let posSecondary = position.colors[nextColor ?? color]
-
-                instructions.push(new DrawInstruction('DOT', {
-                    x1: posSecondary.x,
-                    y1: posSecondary.y,
-                    delay: this.settings.delay,
-                    moveDelay: this.settings.moveDelay
-                },
-                    "left", "SET_COLOR"))
-
-                if (this.settings.dualColorMode) instructions.push(new DrawInstruction('DOT', {
-                    x1: position.primaryColor.x,
-                    y1: position.primaryColor.y,
-                    delay: this.settings.delay + this.settings.colorDelay,
-                    moveDelay: this.settings.moveDelay
-                },
-                    "left", 'SEL_PRIMARY'))
-
-
-            }
-
+        if (this.settings.onePassMode) {
+            // draw the whole image in one pass. is is much slower because it has to change colors dozens of times, but is more satisfying to watch
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
+                console.timeLog("write", `writing line ${y}`)
+                let colorsInLine = []
+                let colorCache = []
                 for (let x = 0; x < recolored.bitmap.width; x++) {
                     let numb = recolored.getPixelColor(x, y)
                     let rgba = Jimp.intToRGBA(numb)
                     let hex = rgbToHex(rgba)
 
-                    if (this.settings.dualColorMode && !(color == hex || nextColor == hex)) continue
-                    if (!this.settings.dualColorMode && color != hex) continue
-
-                    if (this.settings.fast) {
-                        let looping = true
-                        let fy = y
-                        let fx = x
-                        let xPixels = 0
-                        let yPixels = 0
-
-                        let foundPixels = drawnPixels.find((p) => {
-                            let [xS, yS] = p.split(",")
-                            let [x1, x2] = xS.split("-")
-                            let [y1, y2] = yS.split("-")
+                    colorCache.push(hex)
+                    if (settings.data.ignoreColors.concat(ignoreColors).includes(hex)) continue
+                    if (colorsInLine.includes(hex)) continue
+                    // colorsInLine[hex] = colorsInLine[hex] ? colorsInLine[hex] + 1 : 1
+                    colorsInLine.push(hex)
+                }
 
 
+                for (let color of colorsInLine) {
+                    let pos = position.colors[color]
 
-                            // check if x and y is in range
-                            return isInRange(x, x1, x2,) && isInRange(y, y1, y2)
+                    instructions.push(new DrawInstruction('DOT', {
+                        x1: pos.x,
+                        y1: pos.y,
+                        delay: this.settings.delay + this.settings.colorDelay,
+                        moveDelay: this.settings.moveDelay
+                    },
+                        "left", "SET_COLOR"))
 
-                        })
+                    let currPos = -1
 
-                        if (this.settings.lineSaving && typeof foundPixels != 'undefined') continue
+                    for (let colorC of colorCache) {
+                        currPos++
+                        if (colorC != color) continue
+                        let pos = relativeToAbsolute(currPos, y, position, this.settings.distancing, 0, 0)
+                        instructions.push(new DrawInstruction('DOT', {
+                            x1: pos.x + offsets.x,
+                            y1: pos.y + offsets.y,
+                            delay: this.settings.delay,
+                            moveDelay: this.settings.moveDelay
+                        }, "left", "DRAW_PIXEL"))
+                    }
 
 
-                        for (let fx = x; looping; fx++) {
 
-                            let fnumb = recolored.getPixelColor(fx, fy)
-                            let frgba = Jimp.intToRGBA(fnumb)
-                            let fhex = rgbToHex(frgba)
-                            if (fhex == hex) {
-                                xPixels++
+                }
+
+
+            }
+        }
+        else {
+            for (let color in colors) {
+
+                // skip a color after two has been drawn at once
+                if (this.settings.dualColorMode && isSecondary) {
+                    isSecondary = false
+                    continue
+                }
+
+                // next color is the color that will be drawn after this one. that should NOT be a ignored color
+                nextColor = getNextKey(colors, color, settings.data.ignoreColors.concat(ignoreColors))
+
+
+
+                if (settings.data.ignoreColors.concat(ignoreColors).includes(color)) continue
+
+                // if (this.debug) {
+                //     this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
+                //     // await this.debug.makeImage()
+                // }
+
+                drawnPixels = []
+
+
+                process.stdout.write('    ')
+                console.timeLog("write", `writing color ${color} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`)
+                // console.log("next color", nextColor)
+
+
+                let pos = position.colors[color]
+
+
+
+
+                instructions.push(new DrawInstruction('DOT', {
+                    x1: pos.x,
+                    y1: pos.y,
+                    delay: this.settings.delay + this.settings.colorDelay,
+                    moveDelay: this.settings.moveDelay
+                },
+                    "left", "SET_COLOR"))
+
+                if (this.settings.dualColorMode) {
+                    if (nextColor) instructions.push(new DrawInstruction('DOT', {
+                        x1: position.secondaryColor.x,
+                        y1: position.secondaryColor.y,
+                        delay: this.settings.delay + this.settings.colorDelay,
+                        moveDelay: this.settings.moveDelay
+                    },
+                        "left", 'SEL_SECONDARY'))
+                    else instructions.push(new DrawInstruction('DOT', {
+                        x1: position.primaryColor.x,
+                        y1: position.primaryColor.y,
+                        delay: this.settings.delay,
+                        moveDelay: this.settings.moveDelay
+                    },
+                        "left", 'SEL_PRIMARY'))
+
+                    let posSecondary = position.colors[nextColor ?? color]
+
+                    instructions.push(new DrawInstruction('DOT', {
+                        x1: posSecondary.x,
+                        y1: posSecondary.y,
+                        delay: this.settings.delay,
+                        moveDelay: this.settings.moveDelay
+                    },
+                        "left", "SET_COLOR"))
+
+                    if (this.settings.dualColorMode) instructions.push(new DrawInstruction('DOT', {
+                        x1: position.primaryColor.x,
+                        y1: position.primaryColor.y,
+                        delay: this.settings.delay + this.settings.colorDelay,
+                        moveDelay: this.settings.moveDelay
+                    },
+                        "left", 'SEL_PRIMARY'))
+
+
+                }
+
+
+                for (let y = 0; y < recolored.bitmap.height; y++) {
+                    for (let x = 0; x < recolored.bitmap.width; x++) {
+                        let numb = recolored.getPixelColor(x, y)
+                        let rgba = Jimp.intToRGBA(numb)
+                        let hex = rgbToHex(rgba)
+
+                        if (this.settings.dualColorMode && !(color == hex || nextColor == hex)) continue
+                        if (!this.settings.dualColorMode && color != hex) continue
+
+                        if (this.settings.fast) {
+                            let looping = true
+                            let fy = y
+                            let fx = x
+                            let xPixels = 0
+                            let yPixels = 0
+
+                            let foundPixels = drawnPixels.find((p) => {
+                                let [xS, yS] = p.split(",")
+                                let [x1, x2] = xS.split("-")
+                                let [y1, y2] = yS.split("-")
+
+
+
+                                // check if x and y is in range
+                                return isInRange(x, x1, x2,) && isInRange(y, y1, y2)
+
+                            })
+
+                            if (this.settings.lineSaving && typeof foundPixels != 'undefined') continue
+
+
+                            for (let fx = x; looping; fx++) {
+
+                                let fnumb = recolored.getPixelColor(fx, fy)
+                                let frgba = Jimp.intToRGBA(fnumb)
+                                let fhex = rgbToHex(frgba)
+                                if (fhex == hex) {
+                                    xPixels++
+                                }
+                                else {
+
+                                    looping = false
+                                }
+
+                                // if (pixels <= 0) break
+
+                                looping = fx < recolored.bitmap.width - 1 && looping
+                                if ((!this.settings.lineSaving) && (!looping)) {
+                                    if (xPixels > 1) {
+                                        let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                        let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
+                                        instructions.push(new DrawInstruction('DRAG', {
+                                            x1: pos1.x + offsets.x,
+                                            y1: pos1.y + offsets.y,
+                                            x2: pos2.x + offsets.x,
+                                            y2: pos2.y + offsets.y,
+                                            delay: this.settings.delay,
+                                            moveDelay: this.settings.moveDelay
+                                        }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+                                    }
+                                    else {
+                                        let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                        instructions.push(new DrawInstruction('DOT', {
+                                            x1: pos.x + offsets.x,
+                                            y1: pos.y + offsets.y,
+                                            delay: this.settings.delay,
+                                            moveDelay: this.settings.moveDelay
+                                        }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
+
+                                    }
+                                    x = fx
+
+                                }
+
                             }
-                            else {
 
-                                looping = false
-                            }
 
-                            // if (pixels <= 0) break
+                            if (this.settings.lineSaving) {
+                                looping = true
+                                for (let fy = y; looping; fy++) {
 
-                            looping = fx < recolored.bitmap.width - 1 && looping
-                            if ((!this.settings.lineSaving) && (!looping)) {
-                                if (xPixels > 1) {
-                                    let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
-                                    let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
-                                    instructions.push(new DrawInstruction('DRAG', {
-                                        x1: pos1.x + offsets.x,
-                                        y1: pos1.y + offsets.y,
-                                        x2: pos2.x + offsets.x,
-                                        y2: pos2.y + offsets.y,
-                                        delay: this.settings.delay,
-                                        moveDelay: this.settings.moveDelay
-                                    }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+                                    let fnumb = recolored.getPixelColor(fx, fy)
+                                    let frgba = Jimp.intToRGBA(fnumb)
+                                    let fhex = rgbToHex(frgba)
+                                    if (fhex == hex) {
+                                        yPixels++
+                                    }
+                                    else {
+
+                                        looping = false
+                                    }
+
+                                    // if (pixels <= 0) break
+
+                                    looping = fy < recolored.bitmap.height - 1 && looping
+                                }
+                                let largest = Math.max(xPixels, yPixels)
+                                if (largest > 1) {
+                                    if (xPixels >= yPixels) {
+                                        // draw x
+                                        let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                        let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
+                                        instructions.push(new DrawInstruction('DRAG', {
+                                            x1: pos1.x + offsets.x,
+                                            y1: pos1.y + offsets.y,
+                                            x2: pos2.x + offsets.x,
+                                            y2: pos2.y + offsets.y,
+                                            delay: this.settings.delay,
+                                            moveDelay: this.settings.moveDelay
+                                        }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+
+                                        let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
+                                        this.debug?.drawnPixels.push(pixString)
+
+                                        await this.debug?.makeImage(pixString)
+                                        drawnPixels.push(pixString)
+                                        x += xPixels
+                                        // addLTodrawn(instructions, drawnPixels)
+
+
+                                    }
+                                    else {
+                                        // draw y
+                                        let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                                        let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, yPixels - 1)
+                                        instructions.push(new DrawInstruction('DRAG', {
+                                            x1: pos1.x + offsets.x,
+                                            y1: pos1.y + offsets.y,
+                                            x2: pos2.x + offsets.x,
+                                            y2: pos2.y + offsets.y,
+                                            delay: this.settings.delay,
+                                            moveDelay: this.settings.moveDelay
+                                        }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+
+                                        // addLTodrawn(instructions, drawnPixels)
+                                        let pixString = `${x}-${x},${y}-${y + (yPixels - 1)}`
+                                        this.debug?.drawnPixels.push(pixString)
+
+                                        await this.debug?.makeImage(pixString)
+                                        drawnPixels.push(pixString)
+                                    }
                                 }
                                 else {
                                     let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
@@ -456,110 +591,29 @@ module.exports = class InstructionWriter {
                                         moveDelay: this.settings.moveDelay
                                     }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
 
+                                    this.debug?.customPixels.push(`${x},${y}`)
                                 }
-                                x = fx
 
                             }
 
                         }
-
-
-                        if (this.settings.lineSaving) {
-                            looping = true
-                            for (let fy = y; looping; fy++) {
-
-                                let fnumb = recolored.getPixelColor(fx, fy)
-                                let frgba = Jimp.intToRGBA(fnumb)
-                                let fhex = rgbToHex(frgba)
-                                if (fhex == hex) {
-                                    yPixels++
-                                }
-                                else {
-
-                                    looping = false
-                                }
-
-                                // if (pixels <= 0) break
-
-                                looping = fy < recolored.bitmap.height - 1 && looping
-                            }
-                            let largest = Math.max(xPixels, yPixels)
-                            if (largest > 1) {
-                                if (xPixels >= yPixels) {
-                                    // draw x
-                                    let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
-                                    let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, xPixels - 1, 0)
-                                    instructions.push(new DrawInstruction('DRAG', {
-                                        x1: pos1.x + offsets.x,
-                                        y1: pos1.y + offsets.y,
-                                        x2: pos2.x + offsets.x,
-                                        y2: pos2.y + offsets.y,
-                                        delay: this.settings.delay,
-                                        moveDelay: this.settings.moveDelay
-                                    }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
-
-                                    let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
-                                    this.debug?.drawnPixels.push(pixString)
-
-                                    await this.debug?.makeImage(pixString)
-                                    drawnPixels.push(pixString)
-                                    x += xPixels
-                                    // addLTodrawn(instructions, drawnPixels)
-
-
-                                }
-                                else {
-                                    // draw y
-                                    let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
-                                    let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, yPixels - 1)
-                                    instructions.push(new DrawInstruction('DRAG', {
-                                        x1: pos1.x + offsets.x,
-                                        y1: pos1.y + offsets.y,
-                                        x2: pos2.x + offsets.x,
-                                        y2: pos2.y + offsets.y,
-                                        delay: this.settings.delay,
-                                        moveDelay: this.settings.moveDelay
-                                    }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
-
-                                    // addLTodrawn(instructions, drawnPixels)
-                                    let pixString = `${x}-${x},${y}-${y + (yPixels - 1)}`
-                                    this.debug?.drawnPixels.push(pixString)
-
-                                    await this.debug?.makeImage(pixString)
-                                    drawnPixels.push(pixString)
-                                }
-                            }
-                            else {
-                                let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
-                                instructions.push(new DrawInstruction('DOT', {
-                                    x1: pos.x + offsets.x,
-                                    y1: pos.y + offsets.y,
-                                    delay: this.settings.delay,
-                                    moveDelay: this.settings.moveDelay
-                                }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
-
-                                this.debug?.customPixels.push(`${x},${y}`)
-                            }
-
+                        else {
+                            let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
+                            let instruction = new DrawInstruction('DOT', {
+                                x1: pos.x + offsets.x,
+                                y1: pos.y + offsets.y,
+                                delay: this.settings.delay,
+                                moveDelay: this.settings.moveDelay
+                            }, hex == nextColor ? "right" : "left", "DRAW_PIXEL")
+                            instructions.push(instruction)
+                            this.debug?.customPixels.push(`${x},${y}`)
                         }
-
-                    }
-                    else {
-                        let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
-                        let instruction = new DrawInstruction('DOT', {
-                            x1: pos.x + offsets.x,
-                            y1: pos.y + offsets.y,
-                            delay: this.settings.delay,
-                            moveDelay: this.settings.moveDelay
-                        }, hex == nextColor ? "right" : "left", "DRAW_PIXEL")
-                        instructions.push(instruction)
-                        this.debug?.customPixels.push(`${x},${y}`)
                     }
                 }
+
+                isSecondary = !isSecondary
+
             }
-
-            isSecondary = !isSecondary
-
         }
 
         // return

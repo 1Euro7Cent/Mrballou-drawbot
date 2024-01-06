@@ -12,7 +12,7 @@ module.exports = class GuiConfig extends BaseConfig {
             ["sortColors", "dither"],
             ["fastMode", "bucket"],
             ["lineSavingMode", "onTimeDelayMode"],
-            ["dualColorMode", ""],
+            ["dualColorMode", "onePassMode"],
             ["onTimeDelayText", "onTimeDelayMultiplyer"],
             ["sortColorsAlgorithmText", "sortColorsAlgorithm"],
             ["resizeImageAlgorithmText", "resizeImageAlgorithm"],

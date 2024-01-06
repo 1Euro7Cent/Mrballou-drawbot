@@ -30,7 +30,8 @@ module.exports = class Setting extends BaseConfig {
                 x2: 0,
                 y2: 0
             },
-            dualColorMode: false
+            dualColorMode: false,
+            onePassMode: false,
         }
 
     }

@@ -145,6 +145,7 @@ def main(port):
             imageResizeAlg.set(data['resizeImgAlg'])
             positionImageAlg.set(data['positionImgAlg'])
             dualColorModeVal.set(data['dualColorMode'])
+            onePassModeVal.set(data['onePassMode'])
         except KeyError:
             print("Error loading data")
         checkData()
@@ -226,7 +227,8 @@ def main(port):
             "positionOverride": manualOverrideVal,
             "resizeImgAlg": imageResizeAlg.get(),
             "positionImgAlg": positionImageAlg.get(),
-            "dualColorMode": dualColorModeVal.get()
+            "dualColorMode": dualColorModeVal.get(),
+            "onePassMode": onePassModeVal.get()
         }
         return res
 
@@ -354,6 +356,11 @@ def main(port):
     dualColorMode = tk.CTkCheckBox(root, text='Dual color mode', variable=dualColorModeVal)
     dualColorMode.grid(row=pos["row"], column=pos["col"])
 
+    # onePassMode
+    pos = getRC(guiData, 'onePassMode')
+    onePassModeVal = tk.BooleanVar()
+    onePassMode = tk.CTkCheckBox(root, text='One pass mode', variable=onePassModeVal)
+    onePassMode.grid(row=pos["row"], column=pos["col"])
 
 
     # sort colors
