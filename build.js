@@ -57,6 +57,7 @@ cTkinterLocation += "/customtkinter;customtkinter/"
 console.log(cTkinterLocation)
 
 
+//*
 // clean up
 
 console.log('Cleaning up...')
@@ -114,6 +115,8 @@ for (let command of commands) {
 }
 fs.rmSync('index.temp.js')
 
+//*/
+
 console.log('Build complete. files are found in dist/ \nPacking to zip file...')
 
 let startBatch = `@echo off
@@ -134,14 +137,17 @@ for (let file of fs.readdirSync('./dist')) {
             files.file(file, fs.readFileSync(`./dist/${file}`))
     }
 }
-console.log(zip)
+// console.log(zip)
 
 zip.generateAsync({
     type: 'nodebuffer',
+    compression: "DEFLATE",
+    compressionOptions: {
+        level: 9
+    }
 }).then((content) => {
     fs.writeFileSync('./build.zip', content)
     console.log('Packing complete. file is found in build.zip')
 
+    console.timeEnd('build')
 })
-
-console.timeEnd('build')
