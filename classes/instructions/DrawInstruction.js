@@ -23,6 +23,7 @@ module.exports = class DrawInstruction {
             throw new Error(`Cords are not numbers`)
         }
         if (this.cords.x1 == -1 || this.cords.y1 == -1) return
+        return //during development to make sure it doesn't accidentally draw
 
         switch (this.type) {
             case "DOT":

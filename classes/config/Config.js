@@ -18,6 +18,15 @@ module.exports = class Config extends BaseConfig {
                 incomplete: ' ',
                 renderThrottle: 100 // 100 ms until next render
             },
+            communication: {
+                keepAlive: {
+                    interval: 1000,
+                    messageSender: "ping",
+                    messageReceiver: "pong",
+                    unreceivedMax: 5,
+
+                }
+            },
             debug: {
                 enabled: false,
                 saveWrite: {

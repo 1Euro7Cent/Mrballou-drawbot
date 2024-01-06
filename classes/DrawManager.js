@@ -11,6 +11,7 @@ const ProgressBar = require('progress')
 
 
 
+
 module.exports = class DrawManager {
     /**
      * @param {Config} config
@@ -20,6 +21,7 @@ module.exports = class DrawManager {
         this.resizer = new Resizer(config)
         this.instructionWriter = new InstructionWriter(config)
         this.state = "idle"
+        this.isAborting = false
     }
 
     /**
@@ -31,6 +33,7 @@ module.exports = class DrawManager {
             console.error("Already drawing")
             return
         }
+        this.aborting = false
         this.state = "initializing"
 
         this.settings = settings.data
@@ -176,7 +179,9 @@ module.exports = class DrawManager {
         for (let instruction of instructions) {
             // console.log(instruction)
             if (pos % 10 === 0) {
-                if (fs.existsSync(this.config.temp + this.config.abortingFile)) {
+                if (this.isAborting || fs.existsSync(this.config.temp + this.config.abortingFile)) {
+                    this.state = "idle"
+                    console.log("aborted")
                     break
                 }
                 pos = 0
@@ -193,5 +198,12 @@ module.exports = class DrawManager {
         console.timeEnd("total")
 
 
+    }
+
+    async abort() {
+        this.isAborting = true
+        if (this.state == "drawing") {
+            fs.writeFileSync(this.config.temp + this.config.abortingFile, "")
+        }
     }
 }

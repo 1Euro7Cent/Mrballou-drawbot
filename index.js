@@ -1,11 +1,13 @@
 const fs = require('fs')
 const express = require('express')
+const ws = require('ws')
 
 const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
 const Setting = require('./classes/config/Setting')
 const Positions = require('./classes/config/Positions')
 const GuiConfig = require('./classes/config/GuiConfig')
+const GuiBuilder = require('./classes/gui/GuiBuilder')
 
 
 let package = {} // DON'T CHANGE THIS LINE OTHERWISE THE BUILD WILL NOT SUCCEED
@@ -31,7 +33,6 @@ if (fs.existsSync(config.temp + config.abortingFile)) {
     fs.unlinkSync(config.temp + config.abortingFile)
 }
 
-let drawManager = new DrawManager(config_)
 
 
 // check if temp exists
@@ -53,6 +54,63 @@ position.save('./positions.json')
 let guiConfig = new GuiConfig(undefined, config.prettifyData)
 guiConfig.fromFile('./guiConfig.json')
 guiConfig.save('./guiConfig.json')
+
+let guiBuilder = new GuiBuilder(package)
+
+
+console.log(`starting websocket server on port ${config.port}`)
+
+const wss = new ws.Server({ port: config.port })
+let connected = false
+
+wss.on('connection', (ws) => {
+    console.log(ws)
+    console.log('connection established')
+    if (connected) {
+        console.log('already connected')
+        ws.send('already connected')
+        ws.close()
+        return
+    }
+    connected = true
+    let drawManager = new DrawManager(config_)
+
+    let selectGui = guiBuilder.buildSelection(config)
+    ws.send(guiBuilder.toStr(selectGui))
+
+    let messageCount = config.communication.keepAlive.unreceivedMax
+
+    let heartbeat = setInterval(() => {
+        ws.send(config.communication.keepAlive.messageSender)
+        console.log(`keep alive count: ${messageCount}`)
+        messageCount--
+        if (messageCount < 0) {
+            console.log('client disconnected')
+            connected = false
+            ws.close()
+            console.log(ws.readyState == ws.CLOSED ? 'closed' : 'not closed')
+            clearInterval(heartbeat)
+        }
+        // console.log('pinging client')
+    }, config.communication.keepAlive.interval)
+
+    ws.on('message', (msg) => {
+        let message = msg.toString()
+        if (message == config.communication.keepAlive.messageReceiver) {
+            messageCount++
+            return
+        }
+
+        if (message == config.abortKey || message.toLowerCase() == "stop") {
+            drawManager.abort()
+            return
+        }
+
+        console.log(`got message: ${message}`)
+
+    })
+})
+
 
 
 let app = express()
@@ -90,10 +148,11 @@ app.get("/state", (req, res) => {
     res.send(drawManager.state)
 })
 
-
+/*
 app.listen(config.port, () => {
     console.log(`listening on port ${config.port}`)
 })
+//*/
 // console.log(positions)
 
 
