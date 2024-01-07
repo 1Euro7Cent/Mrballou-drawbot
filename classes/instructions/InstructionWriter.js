@@ -247,15 +247,69 @@ module.exports = class InstructionWriter {
             moveDelay: this.settings.moveDelay
         }, "left", 'INIT_WINDOW'))
 
+        let largestColor = Object.keys(colors).reduce((a, b) => colors[a] > colors[b] ? a : b)
+
+        if (this.settings.box || this.settings.bucket) {
+            let colPos = position.colors[largestColor]
+            instructions.push(new DrawInstruction('DOT', {
+                x1: colPos.x,
+                y1: colPos.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'SEL_LARGEST_COL'))
+        }
+
+        //box
+        if (this.settings.box) {
+            // add a perimeter around the image
+            let topAbs = relativeToAbsolute(img.bitmap.width - 1, 0, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('DRAGNOTRELEASE', {
+                x1: position.topleft.x + this.settings.distancing + offsets.x - 1,
+                y1: topAbs.y + offsets.y,
+                x2: topAbs.x + offsets.x,
+                y2: topAbs.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_TOP'))
+            let last = topAbs
+
+            let rightAbs = relativeToAbsolute(img.bitmap.width - 1, img.bitmap.height - 1, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('MOVE', {
+                x1: last.x + offsets.x,
+                y1: rightAbs.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_RIGHT'))
+            last = rightAbs
+
+            let bottomAbs = relativeToAbsolute(0, 0, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('MOVE', {
+                x1: bottomAbs.x + offsets.x,
+                y1: last.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_BOTTOM'))
+            last = bottomAbs
+
+            let leftAbs = relativeToAbsolute(0, 0, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('MOVE', {
+                x1: last.x + offsets.x,
+                y1: leftAbs.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_LEFT'))
+
+            instructions.push(new DrawInstruction('RELEASE', { x1: 0, y1: 0 }, "left", 'RELEASE_LEFT'))
+
+
+        }
 
         // bucket 
-
         if (this.settings.bucket) {
             if (position.bucket?.x > 0 && position.bucket?.y > 0 &&
                 position.pen.x > 0 && position.pen.y > 0) {
 
 
-                let largestColor = Object.keys(colors).reduce((a, b) => colors[a] > colors[b] ? a : b)
 
                 if (!settings.data.ignoreColors.includes(largestColor)) {
 

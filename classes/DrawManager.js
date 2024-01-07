@@ -211,6 +211,7 @@ module.exports = class DrawManager {
         guiBar.start = new Date()
         for (let instruction of instructions) {
             // console.log(instruction)
+            /*
             if (pos % 10 === 0) {
                 if (this.isAborting || fs.existsSync(this.config.temp + this.config.abortingFile)) {
                     this.state = "idle"
@@ -224,6 +225,18 @@ module.exports = class DrawManager {
                 }
 
             }
+            //*/
+
+            if (this.isAborting) {
+                this.state = "idle"
+                console.log("aborted")
+                break
+            }
+            let str = guiBar.render(undefined, true, this.config.guiProgressBar.availableSpace)
+            if (str != "") {
+                this.#broadcastToGuiWD(str)
+            }
+
             await instruction.execute()
             if (this.config.progressBar.enabled && cmdBar) {
                 cmdBar.tick()
