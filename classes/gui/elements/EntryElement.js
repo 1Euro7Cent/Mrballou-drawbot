@@ -1,9 +1,9 @@
 const BaseElement = require("./BaseElement.js")
-module.exports = class ButtonElement extends BaseElement {
-    constructor(name, text) {
+module.exports = class EntryElement extends BaseElement {
+    constructor(name, content) {
         super()
         this.name = name
-        this.text = text
+        this.content = content
     }
 
     toJSON() {
@@ -15,8 +15,8 @@ module.exports = class ButtonElement extends BaseElement {
         // }`
         return {
             name: this.name,
-            text: this.text,
-            type: "button"
+            content: this.content,
+            type: "entry"
         }
     }
 

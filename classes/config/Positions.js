@@ -51,6 +51,7 @@ module.exports = class Positions extends BaseConfig {
      * @returns {{topleft: {x: number, y: number}, bottomright: {x: number, y: number}, primaryColor: {x: number, y: number}, secondaryColor: {x: number, y: number}, width:number, height:number, bucket:{x: number, y:number}, pen:{x:number, y:number} , colors: {hex: {x: number, y: number}}}}
      */
     getPlatform(platform) {
+        console.log("platform", platform)
         let width = this.data[platform].bottomright.x - this.data[platform].topleft.x
         let height = this.data[platform].bottomright.y - this.data[platform].topleft.y
         this.data[platform].width = width

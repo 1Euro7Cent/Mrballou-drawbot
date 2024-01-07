@@ -12,11 +12,17 @@ module.exports = class Config extends BaseConfig {
             abortKey: 'q',
             progressBar: {
                 enabled: true,
-                width: null, // suse default width
                 head: '>',
                 complete: '=',
                 incomplete: ' ',
                 renderThrottle: 100 // 100 ms until next render
+            },
+            guiProgressBar: {
+                availableSpace: 15,
+            },
+            gui: {
+                font: "Consolas",
+                fontSize: 12,
             },
             communication: {
                 keepAlive: {

@@ -1,11 +1,18 @@
 const fs = require('fs')
 
 module.exports = class Config {
-    constructor(name = 'config', prettify = false) {
+    /**
+     * 
+     * @param {string} name 
+     * @param {boolean} prettify 
+     * @param {boolean} allowParseToNumber 
+     */
+    constructor(name = 'config', prettify = false, allowParseToNumber = true) {
 
         this.data = {}
         this.name = name
         this.prettify = prettify
+        this.allowParseToNumber = allowParseToNumber
     }
     /**
      * @param {any} config
@@ -31,6 +38,10 @@ module.exports = class Config {
                 else {
 
                     if (typeof obj1[key] !== typeof obj2[key]) {
+                        if (this.allowParseToNumber && typeof obj1[key] == 'string' && typeof obj2[key] == 'number') {
+                            obj1[key] = Number(obj1[key])
+                            continue
+                        }
                         throw new Error(`${this.name} key ${key} is not of type ${typeof obj2[key]}`)
                     }
                 }

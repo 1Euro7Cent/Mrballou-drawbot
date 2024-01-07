@@ -18,7 +18,6 @@ positionData = {}
 settingsData = {}
 guiData = {}
 
-dataToSync = []
 
 
 serverAddress = "http://localhost"
@@ -37,9 +36,10 @@ def communication(cfg):
         # keep alive
         if message == senderPing:
             ws.send(receiverPing)
+            # print("Got keep alive message")
             return
 
-        print("Got message {}".format(message))
+        # print("Got message {}".format(message))
         data = json.loads(message)
         # print(data)
         dataQueue.put(data)
@@ -62,16 +62,40 @@ def communication(cfg):
     wsConn.run_forever()
 
 
+def onButton(buttonName):
+    print("Button pressed {}".format(buttonName))
+    data = {}
+    if not valueQueue.empty():
+        data = valueQueue.queue[0]
+    # print("Button pressed")
+    # print("dataToSync {}".format(data))
+    formattedData = {}
+    for val in data:
+        formattedData[val] = data[val].get()
+
+
+    # wsConn.send(json.dumps({"type": "buttonPressed", "data": formattedData}))
+    # print("data to send")
+    # print(formattedData)
+    wsConn.send(json.dumps({"type": "buttonPressed", "button": buttonName, "data": formattedData}))
+    
+    # valueQueue.put(data)
+
 def updateGui(window):
     # print("Updating gui check")
-    global dataToSync
-    dataToSync = []
+
+    #empty the queue
+    # while not valueQueue.empty():
+    #     valueQueue.get()
+
+    dataToSync = {}
 
     if not dataQueue.empty():
         data = dataQueue.get()
-        print("Got data from gui thread {}".format(data))
+        # print("Got data from gui thread {}".format(data))
         if data["type"] == "updateUI":
-            print("Updating UI")
+            valueQueue.queue = []
+            # print("Updating UI")
             guiData = data["data"]
             # print(guiData)
             
@@ -79,11 +103,12 @@ def updateGui(window):
                 widget.destroy()
 
             rows = 0
-            
+            wantsFontChanged = False
+            fontChangeTo =""
             for row in guiData:
                 columns = 0 
-                print("row {} {}".format(columns, rows))
-                print("row {}".format(row))
+                # print("row {} {}".format(columns, rows))
+                # print("row {}".format(row))
                 rows += 1
                 # if element["type"] == "TextElement":
                 #     print("Adding text element")
@@ -91,13 +116,15 @@ def updateGui(window):
 
 
                 for element in row:
-                    print("element {}".format(element))
+                    # print("element {}".format(element))
                     columns += 1
-                    #
 
                     match element["type"]:
+                        case 'font':
+                            wantsFontChanged = True
+                            fontChangeTo = element["font"]
                         case "geometry":
-                            print("Setting geometry")
+                            # print("Setting geometry")
                             width = element["width"]
                             height = element["height"]
 
@@ -117,21 +144,49 @@ def updateGui(window):
                             else:
                                 geomStr = "{}x{}".format(width,height) 
                             
-                            print("geomString {}".format(geomStr))
+                            # print("geomString {}".format(geomStr))
                             window.geometry(geomStr)
                         case "title":
-                            print("Adding title element")
+                            # print("Adding title element")
                             window.title(element["text"])
                         case "label":
-                            print("Adding text element")
+                            # print("Adding text element")
                             ctk.CTkLabel(window, text=element["text"]).grid(row=rows, column=columns)
                         case "checkbox": 
-                            print("Adding checkbox element")
-                            checkBoxVal = ctk.BooleanVar(value=element["checked"], name=element["name"])
+                            # print("Adding checkbox element")
+                            checkBoxVal = ctk.BooleanVar(value=element["checked"])
+                            dataToSync[element["name"]] = checkBoxVal
                             ctk.CTkCheckBox(window, text=element["text"], variable=checkBoxVal).grid(row=rows, column=columns)
-                            dataToSync.append(checkBoxVal)
+                            # dataToSync.append(checkBoxVal)
 
+                        case "button":
+                            # print("Adding button element")
+                            btn = element["name"]
+                            ctk.CTkButton(window, text=element["text"], command=lambda button=btn: onButton(button)).grid(row=rows, column=columns)
+                            # ctk.CTkButton(window, text=element["text"], command=onButton).grid(row=rows, column=columns)
+                        case "entry":
+                            # print("Adding entry element")
+                            entryVal = ctk.StringVar(window)
+                            entryVal.set(element["content"])
+                            dataToSync[element["name"]] = entryVal
+                            ctk.CTkEntry(window, textvariable=entryVal).grid(row=rows, column=columns)
 
+                        case "dropdown":
+                            # print("Adding dropdown element")
+                            dropdownVal = ctk.StringVar(window)
+                            dropdownVal.set(element["selected"])
+                            dataToSync[element["name"]] = dropdownVal
+                            # print("values {}".format(element["values"]))
+                            ctk.CTkOptionMenu(window, variable=dropdownVal, values=element["values"]).grid(row=rows, column=columns)
+
+        if wantsFontChanged:
+            fontName, fontSize = fontChangeTo.split(" ")
+            fontSize = int(fontSize)
+            for widget in window.winfo_children():
+                widget.configure(font=(fontName, fontSize))
+
+    valueQueue.put(dataToSync)
+    # print("dataToSync {}".format(dataToSync))
 
     window.after(100, updateGui, window)
 
@@ -149,8 +204,9 @@ def onPress(key):
     if key == keyboard.Key.esc or key == keyboard.KeyCode.from_char(config['abortKey']):
         print("Aborting")
         # create a new json file
-        with open(path, 'w') as f:
-            json.dump({"abort": True}, f)
+        wsConn.send("stop")
+        # with open(path, 'w') as f:
+        #     json.dump({"abort": True}, f)
 
 
 def onClick(x, y, button, pressed):

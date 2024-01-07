@@ -6,7 +6,7 @@ module.exports = class Setting extends BaseConfig {
         super(name, prettify)
 
         this.data = {
-            name: "paint",
+            platform: "paint",
             img: './img/test.png',
             dither: false,
             fast: true,
@@ -22,7 +22,7 @@ module.exports = class Setting extends BaseConfig {
             bucket: false,
             lineSaving: false,
             onTimeDelay: false,
-            onTimeDelayMultiplyer: 1,
+            onTimeDelayMultiplier: 1,
             positionOverride: {
                 enabled: false,
                 x1: 0,

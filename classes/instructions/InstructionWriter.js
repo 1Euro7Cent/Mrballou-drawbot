@@ -21,6 +21,9 @@ module.exports = class InstructionWriter {
         if (this.config.debug.enabled && this.config.debug.saveWrite.enabled) {
             this.debug = new DebugSaver(config)
         }
+        this.isAborting = false
+
+        this.logger = (...args) => { }
     }
 
     /**
@@ -30,6 +33,7 @@ module.exports = class InstructionWriter {
      * @param {Setting} settings
      */
     async write(img, positions, settings) {
+        this.isAborting = false
         this.settings = settings.data
 
         if (this.debug) {
@@ -39,7 +43,7 @@ module.exports = class InstructionWriter {
         let instructions = []
         let ignoreColors = []
 
-        let position = positions.getPlatform(this.settings.name)
+        let position = positions.getPlatform(this.settings.platform)
 
         if (settings.data.positionOverride.enabled) {
             position.topleft = {
@@ -313,9 +317,13 @@ module.exports = class InstructionWriter {
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
                 console.timeLog("write", `writing line ${y}`)
+                this.logger(`Calculating...\nwriting line ${y}/${recolored.bitmap.height}`)
+                if (this.isAborting) return []
+                await sleep(5)
                 let colorsInLine = []
                 let colorCache = []
                 for (let x = 0; x < recolored.bitmap.width; x++) {
+                    if (this.isAborting) return []
                     let numb = recolored.getPixelColor(x, y)
                     let rgba = Jimp.intToRGBA(numb)
                     let hex = rgbToHex(rgba)
@@ -361,7 +369,10 @@ module.exports = class InstructionWriter {
             }
         }
         else {
+            let colorCounter = 0
+            let colorCount = objToArr(colors).length
             for (let color in colors) {
+                colorCounter++
 
                 // skip a color after two has been drawn at once
                 if (this.settings.dualColorMode && isSecondary) {
@@ -385,7 +396,11 @@ module.exports = class InstructionWriter {
 
 
                 process.stdout.write('    ')
-                console.timeLog("write", `writing color ${color} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`)
+                let logText = `writing color ${color} ${colorCounter}/${colorCount} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`
+                console.timeLog("write", logText)
+                this.logger("Calculating...\n" + logText)
+                if (this.isAborting) return []
+                await sleep(5)
                 // console.log("next color", nextColor)
 
 
@@ -441,6 +456,7 @@ module.exports = class InstructionWriter {
 
 
                 for (let y = 0; y < recolored.bitmap.height; y++) {
+                    if (this.isAborting) return []
                     for (let x = 0; x < recolored.bitmap.width; x++) {
                         let numb = recolored.getPixelColor(x, y)
                         let rgba = Jimp.intToRGBA(numb)
@@ -685,7 +701,7 @@ module.exports = class InstructionWriter {
             for (let i = 0; i < instructions.length; i++) {
                 let instruction = instructions[i]
                 if (instruction.cords.delay) {
-                    instruction.cords.delay += this.settings.onTimeDelayMultiplyer * i
+                    instruction.cords.delay += this.settings.onTimeDelayMultiplier * i
                 }
 
 
@@ -826,4 +842,10 @@ function rgbToHex(rgb) {
     if (g.length < 2) g = "0" + g
     if (b.length < 2) b = "0" + b
     return "#" + r + g + b
+}
+
+async function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms)
+    })
 }

@@ -7,7 +7,8 @@ const Positions = require('./config/Positions')
 const Setting = require('./config/Setting')
 const InstructionWriter = require('./instructions/InstructionWriter')
 const Resizer = require('./Resizer')
-const ProgressBar = require('progress')
+// const ProgressBar = require('progress')
+const ProgressBar = require('./../lib/node-progress')
 
 
 
@@ -15,13 +16,41 @@ const ProgressBar = require('progress')
 module.exports = class DrawManager {
     /**
      * @param {Config} config
+     * @param {import("./gui/GuiBuilder")} guiBuilder
      */
-    constructor(config) {
+    constructor(config, guiBuilder) {
         this.config = config.data
         this.resizer = new Resizer(config)
         this.instructionWriter = new InstructionWriter(config)
+        this.guiBuilder = guiBuilder
         this.state = "idle"
         this.isAborting = false
+
+        this.broadcastQueue = []
+
+
+        setInterval(() => {
+            // console.log("log message: " + logMessage)
+            if (this.broadcastQueue.length > 0) {
+                let logMessage = this.broadcastQueue.shift()
+                guiBuilder.buildCalc(logMessage).serve()
+            }
+        }, 100)
+        this.lastLog = Date.now()
+        this.instructionWriter.logger = (message) => {
+            this.#broadcastToGuiWD(message)
+        }
+    }
+
+    #broadcastToGui(message) {
+        this.broadcastQueue.push(message)
+    }
+    #broadcastToGuiWD(message) {
+        let now = Date.now()
+        if (now - this.lastLog > 500) {
+            this.#broadcastToGui(message)
+            this.lastLog = now
+        }
     }
 
     /**
@@ -33,7 +62,7 @@ module.exports = class DrawManager {
             console.error("Already drawing")
             return
         }
-        this.aborting = false
+        this.isAborting = false
         this.state = "initializing"
 
         this.settings = settings.data
@@ -45,6 +74,7 @@ module.exports = class DrawManager {
         let img = this.settings.img
 
         console.time("total")
+        this.guiBuilder.buildCalc("Calculating...").serve()
         // if base64 encode the image
         this.state = "decoding"
         if (this.settings.img.startsWith("data:image/")) {
@@ -60,6 +90,7 @@ module.exports = class DrawManager {
                 console.error("Image not found: " + img)
                 this.state = "idle"
                 console.timeEnd("total")
+                this.guiBuilder.buildCalc("Image not found: " + img).serve()
                 return
             }
 
@@ -76,13 +107,14 @@ module.exports = class DrawManager {
                 console.error(e)
                 console.timeEnd("total")
                 this.state = "idle"
+                this.guiBuilder.buildCalc("Error reading image. see console for infos").serve()
                 return
             }
         }
 
         this.state = "resizing"
 
-        let position = positions.getPlatform(this.settings.name)
+        let position = positions.getPlatform(this.settings.platform)
         if (settings.data.positionOverride.enabled) {
             position.topleft = {
                 x: settings.data.positionOverride.x1,
@@ -151,31 +183,32 @@ module.exports = class DrawManager {
         this.state = "drawing"
         // console.log(instructions)
         console.time("draw")
-        /**@type {ProgressBar} */
-        let bar
-
-        if (this.config.progressBar.enabled) {
-            /** @type {number | undefined}*/
-            let width
-            if (this.config.progressBar.width === null) {
-                width = undefined
-            }
-            else {
-                width = this.config.progressBar.width
-            }
+        this.guiBuilder.buildCalc("Drawing...").serve()
 
 
 
-            bar = new ProgressBar('drawing [:bar] :current/:total :percent :etas', {
+
+        let barConfig = {
+            text: "Drawing [:bar] :current/:total :percent :etas",
+            data: {
                 total: instructions.length,
-                width: width,
                 head: this.config.progressBar.head,
                 incomplete: this.config.progressBar.incomplete,
                 renderThrottle: this.config.progressBar.renderThrottle
-            })
+            }
+        }
+
+        /**@type {ProgressBar} */
+        let cmdBar
+
+        let guiBar = new ProgressBar(barConfig.text.replace("Drawing ", ""), barConfig.data)
+
+        if (this.config.progressBar.enabled) {
+            cmdBar = new ProgressBar(barConfig.text, barConfig.data)
         }
 
         let pos = 0
+        guiBar.start = new Date()
         for (let instruction of instructions) {
             // console.log(instruction)
             if (pos % 10 === 0) {
@@ -185,25 +218,34 @@ module.exports = class DrawManager {
                     break
                 }
                 pos = 0
+                let str = guiBar.render(undefined, true, this.config.guiProgressBar.availableSpace)
+                if (str != "") {
+                    this.#broadcastToGuiWD(str)
+                }
+
             }
             await instruction.execute()
-            if (this.config.progressBar.enabled && bar) {
-
-                bar.tick()
+            if (this.config.progressBar.enabled && cmdBar) {
+                cmdBar.tick()
             }
+            guiBar.curr++
             pos++
         }
 
         console.timeEnd("draw")
         console.timeEnd("total")
+        this.state = "idle"
+        this.guiBuilder.buildSelection(settings, positions).serve()
 
 
     }
 
     async abort() {
+        console.log("aborting")
         this.isAborting = true
         if (this.state == "drawing") {
-            fs.writeFileSync(this.config.temp + this.config.abortingFile, "")
+            // fs.writeFileSync(this.config.temp + this.config.abortingFile, "")
         }
+        this.instructionWriter.isAborting = true
     }
 }
