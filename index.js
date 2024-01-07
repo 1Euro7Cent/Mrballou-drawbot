@@ -77,6 +77,7 @@ wss.on('connection', (ws) => {
 
     let selectGui = guiBuilder.buildSelection(config)
     ws.send(guiBuilder.toStr(selectGui))
+    // console.log(guiBuilder.toStr(selectGui))
 
     let messageCount = config.communication.keepAlive.unreceivedMax
 
@@ -87,6 +88,7 @@ wss.on('connection', (ws) => {
         if (messageCount < 0) {
             console.log('client disconnected')
             connected = false
+            drawManager.abort()
             ws.close()
             console.log(ws.readyState == ws.CLOSED ? 'closed' : 'not closed')
             clearInterval(heartbeat)

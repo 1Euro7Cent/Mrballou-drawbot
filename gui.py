@@ -73,52 +73,63 @@ def updateGui(window):
         if data["type"] == "updateUI":
             print("Updating UI")
             guiData = data["data"]
-            print(guiData)
+            # print(guiData)
             
             for widget in window.winfo_children():
                 widget.destroy()
+
+            rows = 0
             
-            for element in guiData:
-                print(element)
+            for row in guiData:
+                columns = 0 
+                print("row {} {}".format(columns, rows))
+                print("row {}".format(row))
+                rows += 1
                 # if element["type"] == "TextElement":
                 #     print("Adding text element")
                 #     ctk.CTkLabel(window, text=element["text"]).pack()
 
-                match element["type"]:
-                    case "geometry":
-                        print("Setting geometry")
-                        width = element["width"]
-                        height = element["height"]
 
-                        x = None
-                        y = None
+                for element in row:
+                    print("element {}".format(element))
+                    columns += 1
+                    #
 
-                        if "x" in element:
-                            x = element["x"]
-                        
-                        if "y" in element:
-                            y = element["y"]
+                    match element["type"]:
+                        case "geometry":
+                            print("Setting geometry")
+                            width = element["width"]
+                            height = element["height"]
 
-                        geomStr =""
+                            x = None
+                            y = None
 
-                        if x and y:
-                            geomStr = "{}x{}+{}+{}".format(width,height,x, y)
-                        else:
-                            geomStr = "{}x{}".format(width,height) 
-                        
-                        print("geomString {}".format(geomStr))
-                        window.geometry(geomStr)
-                    case "title":
-                        print("Adding title element")
-                        window.title(element["text"])
-                    case "label":
-                        print("Adding text element")
-                        ctk.CTkLabel(window, text=element["text"]).pack()
-                    case "checkbox": 
-                        print("Adding checkbox element")
-                        checkBoxVal = ctk.BooleanVar(value=element["checked"], name=element["name"])
-                        ctk.CTkCheckBox(window, text=element["text"], variable=checkBoxVal).pack()
-                        dataToSync.append(checkBoxVal)
+                            if "x" in element:
+                                x = element["x"]
+                            
+                            if "y" in element:
+                                y = element["y"]
+
+                            geomStr =""
+
+                            if x and y:
+                                geomStr = "{}x{}+{}+{}".format(width,height,x, y)
+                            else:
+                                geomStr = "{}x{}".format(width,height) 
+                            
+                            print("geomString {}".format(geomStr))
+                            window.geometry(geomStr)
+                        case "title":
+                            print("Adding title element")
+                            window.title(element["text"])
+                        case "label":
+                            print("Adding text element")
+                            ctk.CTkLabel(window, text=element["text"]).grid(row=rows, column=columns)
+                        case "checkbox": 
+                            print("Adding checkbox element")
+                            checkBoxVal = ctk.BooleanVar(value=element["checked"], name=element["name"])
+                            ctk.CTkCheckBox(window, text=element["text"], variable=checkBoxVal).grid(row=rows, column=columns)
+                            dataToSync.append(checkBoxVal)
 
 
 

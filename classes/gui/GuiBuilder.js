@@ -10,32 +10,39 @@ module.exports = class GuiBuilder {
 
     /**
 
-     * @returns {{type:string, data:BaseElement[]}}
+     * @returns {BaseElement[][]}
      */
     #buildMetadata(config) {
-        return {
-            type: "updateUI",
-            data: [
-                new GeometryElement("geometry", 400, 200, 300, 300),
-                new TitleElement(this.metadata.name)]
-        }
+        return [[
+            new GeometryElement("geometry", 400, 200, 300, 300),
+            new TitleElement(this.metadata.name)]]
+
     }
 
     buildSelection(config) {
-        let metadata = this.#buildMetadata(config)
+        /**
+         * @type {{type: string, data: BaseElement[][]}}
+         */
+        let data = {
+            type: "updateUI",
+            data: []
+        }
 
-
+        /**
+         * @type {BaseElement[][]}
+         */
         let elements = [
-            new TextElement("name", "this is a test"),
-            new CheckBoxElement("test", "this is a test button", true)
+            [new TextElement("name", "first text"), new TextElement("name2", "second text")],
+            [new CheckBoxElement("test", "tcheckbox", true)]
         ]
 
-        metadata.data = metadata.data.concat(elements)
+        let metadata = this.#buildMetadata(config)
+        data.data = elements.concat(metadata)
 
         // return metadata.replace("{REPLACEME}",
         //     `[${elements.map(e => e.toJSON()).join(",\n")}]`
         // )
-        return metadata
+        return data
     }
     toStr(data) {
         return JSON.stringify(data)
