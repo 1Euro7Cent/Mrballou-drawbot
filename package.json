@@ -39,9 +39,18 @@
     "pkg": "^5.7.0"
   },
   "nodemonConfig": {
+    "events": {
+      "start": "start cmd /C python gui.py"
+    },
     "ignore": [
       "/temp/*",
       "*.json"
-    ]
+    ],
+    "watch": [
+      "*.js",
+      "*.py",
+      "config.json"
+    ],
+    "delay": "1s"
   }
 }

@@ -12,7 +12,12 @@ const Setting = require('./../config/Setting.js')
 const Positions = require('./../config/Positions.js')
 const Gui = require('./Gui.js')
 const Config = require('./../config/Config.js')
+
 module.exports = class GuiBuilder {
+    /**
+     * @type {{resolve: (value: string) => void, reject: (reason?: any) => void, timeoutId: NodeJS.Timeout}}
+     */
+    #requestcColor
     /**
      * @param {import('ws')} ws
      * @param {Config} config
@@ -24,6 +29,11 @@ module.exports = class GuiBuilder {
         this.config = config.data
         this.saves = saves
         // console.log("gui builder", this.config)
+    }
+    gotReqCol(color) {
+        console.log("clearing timeout")
+        clearTimeout(this.#requestcColor.timeoutId)
+        this.#requestcColor.resolve(color)
     }
 
     /**
@@ -38,6 +48,97 @@ module.exports = class GuiBuilder {
             new TitleElement(this.metadata.name)]]
 
     }
+
+    /**
+     * @param {BaseElement[][]} elements
+     * @param {"updateUI"} type
+     */
+    #insertBase(elements, type) {
+        let metadata = this.#buildMetadata()
+
+        let data = {
+            type: type,
+            data: elements.concat(metadata)
+        }
+        return new Gui(data, this)
+    }
+
+    /**
+    * @param { Setting } settings
+    * @param { Positions } positions
+    */
+    buildIgnoreColors(settings, positions) { }
+
+    /**
+    * @param { Setting } settings
+    * @param { Positions } positions
+    */
+    buildColorSelector(settings, positions, customText = "") {
+        /**
+        * @type {BaseElement[][]}
+        */
+        let elements = [
+            [new ButtonElement("abortButton", "Back")],
+            // [new TextElement("Note: when bucket is enabled, the bucket will override the ignore colors during the draw")],
+            // [new TextElement("Note: when bucket is enabled, the bucket")],
+            // [new TextElement("will override the ignore colors during the draw")],
+
+            [new ButtonElement("addIgnoreColor", "Add color"), new ButtonElement("removeIgnoreColor", "Remove selected color")],
+        ]
+        if (customText != "") {
+            elements.push([new TextElement(customText)])
+        }
+        let c = 0
+        for (let color in settings.data.ignoreColors) {
+            elements.push([new TextElement(color, color)])
+            if (c == 0) {
+                let colors = []
+                for (let color in settings.data.ignoreColors) {
+                    colors.push(color)
+                }
+                // console.log(colors)
+                elements[elements.length - 1].push(new DropdownElement("removeSelectedColor", colors))
+            }
+            c++
+        }
+
+
+        return this.#insertBase(elements, "updateUI")
+    }
+
+    /**
+     * 
+     * @param {*} timeout 
+     * @returns {Promise<string>}
+     */
+    async requestColor(timeout = 60 * 60 * 1000) { // default delay is 1 hour
+        let timeoutId = setTimeout(() => {
+            this.#requestcColor.reject("request color timed out. the user didn't select a color in time")
+        }, timeout)
+        return new Promise((resolve, reject) => {
+            this.#requestcColor = {
+                resolve: resolve,
+                reject: reject,
+                timeoutId: timeoutId
+            }
+            let data = {
+                type: "requestColor",
+                timeout: timeout
+            }
+            this.ws.send(this.toStr(data))
+        }).catch((reason) => {
+            console.error(reason)
+            new Gui({
+                type: "updateUI",
+                data: [
+                    [new TextElement(`Request color failed for reason: ${reason}`)],
+                    [new ButtonElement("abortButton", "Back")],
+                ]
+            }, this).serve()
+
+        })
+    }
+
     /**
     * @param { Setting } settings
     * @param { Positions } positions
@@ -52,14 +153,8 @@ module.exports = class GuiBuilder {
         for (let position in positions.data) {
             this.positions.push(position)
         }
-        console.log("buildSelection")
-        /**
-         * @type {{type: string, data: BaseElement[][]}}
-         */
-        let data = {
-            type: "updateUI",
-            data: []
-        }
+
+
         let saveNames = []
         for (let save in this.saves) {
             saveNames.push(save)
@@ -108,6 +203,7 @@ module.exports = class GuiBuilder {
             // [new TextElement("Dither alg")],
             // [new TextElement("Ignore color"), new EntryElement("ignoreColor", "#FFFFFF")],
             // [new TextElement("Max lines"), new EntryElement("maxLines", "0")],
+            [new ButtonElement("ignoreColorsButton", "Ignore colors")],
             [new TextElement("Delay between colors"), new EntryElement("colorDelay", settings.data.colorDelay)],
             [new TextElement("Press delay"), new EntryElement("moveDelay", settings.data.moveDelay)],
             [new ButtonElement("saveConfig", "Save config"), new EntryElement("saveConfigName", "")],
@@ -116,23 +212,17 @@ module.exports = class GuiBuilder {
             [new BaseElement(), new ButtonElement("drawButton", "Draw")],
         ]
 
-        let metadata = this.#buildMetadata()
-        data.data = elements.concat(metadata)
-
-        // return metadata.replace("{REPLACEME}",
-        //     `[${elements.map(e => e.toJSON()).join(",\n")}]`
-        // )
-        return new Gui(data, this)
+        return this.#insertBase(elements, "updateUI")
     }
 
     buildCalc(message) {
         /**
          * @type {{type: string, data: BaseElement[][]}}
          */
-        let data = {
-            type: "updateUI",
-            data: []
-        }
+        // let data = {
+        //     type: "updateUI",
+        //     data: []
+        // }
 
         /**
          * @type {BaseElement[][]}
@@ -143,22 +233,16 @@ module.exports = class GuiBuilder {
             [new TextElement(message)],
         ]
 
-        let metadata = this.#buildMetadata()
-        // metadata.push([new GeometryElement(200, 400)])
-        data.data = elements.concat(metadata)
+        // let metadata = this.#buildMetadata()
+        // // metadata.push([new GeometryElement(200, 400)])
+        // data.data = elements.concat(metadata)
 
-        return new Gui(data, this)
+        // return new Gui(data, this)
+        return this.#insertBase(elements, "updateUI")
     }
 
-    buildMessage(message) {
-        /**
- * @type {{type: string, data: BaseElement[][]}}
- */
-        let data = {
-            type: "updateUI",
-            data: []
-        }
 
+    buildMessage(message) {
         /**
          * @type {BaseElement[][]}
          */
@@ -167,11 +251,7 @@ module.exports = class GuiBuilder {
             [new TextElement(message)]
         ]
 
-        let metadata = this.#buildMetadata()
-        // metadata.push([new GeometryElement(200, 400)])
-        data.data = elements.concat(metadata)
-
-        return new Gui(data, this)
+        return this.#insertBase(elements, "updateUI")
 
     }
     toStr(data) {

@@ -9,6 +9,7 @@ import requests
 import os
 import time
 import websocket as ws
+from CTkColorPicker import *
 
 dataQueue = queue.Queue()
 valueQueue = queue.Queue()
@@ -43,6 +44,7 @@ def communication(cfg):
         data = json.loads(message)
         # print(data)
         dataQueue.put(data)
+        # print("data queue {}".format(dataQueue.queue))
 
     def onWsError(ws, error):
         print("Got error {}".format(error))
@@ -89,10 +91,17 @@ def updateGui(window):
     #     valueQueue.get()
 
     dataToSync = {}
+    # print("data queue {}".format(dataQueue.queue))
 
     if not dataQueue.empty():
         data = dataQueue.get()
         # print("Got data from gui thread {}".format(data))
+        if data["type"] == "requestColor":
+            col = AskColor().get()
+            wsConn.send(json.dumps({"type": "color", "data": col}))
+            window.after(100, updateGui, window)
+            return
+
         if data["type"] == "updateUI":
             valueQueue.queue = []
             # print("Updating UI")
@@ -151,7 +160,13 @@ def updateGui(window):
                             window.title(element["text"])
                         case "label":
                             # print("Adding text element")
-                            ctk.CTkLabel(window, text=element["text"]).grid(row=rows, column=columns)
+                            if "color" in element:
+                                fgColor = element["color"]
+                                textColor = getTextColor(fgColor)
+                                print("fgColor {} textColor {}".format(fgColor, textColor))
+                                ctk.CTkLabel(window, text=element["text"],fg_color=fgColor, text_color=textColor, padx= 3 ).grid(row=rows, column=columns)
+                            else:
+                                ctk.CTkLabel(window, text=element["text"]).grid(row=rows, column=columns)
                         case "checkbox": 
                             # print("Adding checkbox element")
                             checkBoxVal = ctk.BooleanVar(value=element["checked"])
@@ -174,7 +189,8 @@ def updateGui(window):
                         case "dropdown":
                             # print("Adding dropdown element")
                             dropdownVal = ctk.StringVar(window)
-                            dropdownVal.set(element["selected"])
+                            if "selected" in element:
+                                dropdownVal.set(element["selected"])
                             dataToSync[element["name"]] = dropdownVal
                             # print("values {}".format(element["values"]))
                             ctk.CTkOptionMenu(window, variable=dropdownVal, values=element["values"]).grid(row=rows, column=columns)
@@ -249,6 +265,37 @@ def mouseListener():
     with mouse.Listener(on_click=onClick) as l:
         l.join()
 
+
+# a function that decides weather the most readable color for a given background color is black or white
+def getTextColor(hex):
+    hex = hex.replace("#", "")
+    r = int(hex[0:2], 16)
+    g = int(hex[2:4], 16)
+    b = int(hex[4:6], 16)
+
+    # print("r {} g {} b {}".format(r, g, b))
+    # print("r+g+b {}".format(r+g+b))
+    if r+g+b > 382:
+        return "#000000"
+    else:
+        return "#ffffff"
+
+
+def negativeColor(hex):
+    hex = hex.replace("#", "")
+    r = int(hex[0:2], 16)
+    g = int(hex[2:4], 16)
+    b = int(hex[4:6], 16)
+
+    r = 255 - r
+    g = 255 - g
+    b = 255 - b
+
+    return "#%02x%02x%02x" % (r, g, b)
+
+# print(negativeColor("#000000"))
+# print(negativeColor("#ffffff"))
+# print(negativeColor("#ff0000"))
 
 if __name__ == "__main__":
     print("Starting")

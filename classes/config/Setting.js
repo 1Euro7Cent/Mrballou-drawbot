@@ -15,7 +15,9 @@ module.exports = class Setting extends BaseConfig {
             delay: 1,
             colorDelay: 0,
             moveDelay: 0,
-            ignoreColors: ['#ffffff'],
+            ignoreColors: {
+
+            },
             sortColAlg: "size 0-9",
             resizeImgAlg: "fit",
             positionImgAlg: "center",

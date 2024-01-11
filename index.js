@@ -6,7 +6,6 @@ const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
 const Setting = require('./classes/config/Setting')
 const Positions = require('./classes/config/Positions')
-const GuiConfig = require('./classes/config/GuiConfig')
 const GuiBuilder = require('./classes/gui/GuiBuilder')
 
 
@@ -56,10 +55,6 @@ let position = new Positions(undefined, config.prettifyData)
 position.fromFile('./positions.json')
 position.save('./positions.json')
 
-let guiConfig = new GuiConfig(undefined, config.prettifyData)
-guiConfig.fromFile('./guiConfig.json')
-guiConfig.save('./guiConfig.json')
-
 if (!fs.existsSync('./saves.json')) {
     fs.writeFileSync('./saves.json', "{}")
 }
@@ -75,7 +70,7 @@ let connected = false
 wss.on('connection', (ws) => {
     // console.log(ws)
     console.log('connection established')
-    if (connected) {
+    if (config.communication.allowOnlyOneConnection && connected) {
         console.log('already connected')
         ws.send('already connected')
         ws.close()
@@ -119,7 +114,7 @@ wss.on('connection', (ws) => {
         // console.log('pinging client')
     }, config.communication.keepAlive.interval)
 
-    ws.on('message', (msg) => {
+    ws.on('message', async (msg) => {
         let message = msg.toString()
         if (message == config.communication.keepAlive.messageReceiver) {
             messageCount++
@@ -182,8 +177,58 @@ wss.on('connection', (ws) => {
                             fs.writeFileSync('./saves.json', JSON.stringify(saves, null, config.prettifyData ? 2 : undefined))
 
                             guiBuilder.buildSelection(setting, position).serve()
+                            break
+                        case 'ignoreColorsButton':
+                            guiBuilder.buildColorSelector(setting, position).serve()
 
+                            // let mainCs = await guiBuilder.buildColorSelector(setting, position, true)
+                            // mainCs.serve()
+                            break
+
+                        case "addIgnoreColor":
+                            let color = await guiBuilder.requestColor()
+                            console.log(`got color: ${color}`)
+                            if (!color) {
+                                // await sleep(1000)
+                                guiBuilder.buildColorSelector(setting, position, "In your last operation something has gone wrong").serve()
+                                // let cs1 = await guiBuilder.buildColorSelector(setting, position, true, "In your last operation something has gone wrong")
+                                // cs1.serve()
+                                break
+                            }
+
+                            if (setting.data.ignoreColors[color]) {
+                                // await sleep(1000)
+                                guiBuilder.buildColorSelector(setting, position, `The color ${color} already exists`).serve()
+                                // let cs2 = await guiBuilder.buildColorSelector(setting, position, true, "The color already exists")
+                                // cs2.serve()
+                                break
+                            }
+                            console.log(`adding color: ${color} to ignoreColors`)
+
+                            setting.data.ignoreColors[color] = {}
+                            setting.save('./settings.json')
+                            // await sleep(1000)
+                            guiBuilder.buildColorSelector(setting, position).serve()
+                            // let cs3 = await guiBuilder.buildColorSelector(setting, position, true)
+                            // cs3.serve()
+                            break
+                        case "removeIgnoreColor":
+                            let toRemoveColor = data.data.removeSelectedColor
+                            // console.log(`removing color: ${toRemoveColor} from ignoreColors`)
+                            if (!toRemoveColor) {
+                                guiBuilder.buildColorSelector(setting, position, "You need to select a color to remove").serve()
+                                break
+                            }
+                            delete setting.data.ignoreColors[toRemoveColor]
+                            setting.save('./settings.json')
+                            guiBuilder.buildColorSelector(setting, position).serve()
+                        // let col = await guiBuilder.requestColor(10 * 1000)
+                        // console.log(`got color from promise: ${col}`)
                     }
+                    break
+                case "color":
+                    // console.log(`got color: ${data.data}`)
+                    guiBuilder.gotReqCol(data.data)
                     break
                 default:
                     console.log(`got unknown type: ${message}`)
@@ -198,53 +243,7 @@ wss.on('connection', (ws) => {
 })
 function loadAndSetData(data) {
     setting.fromJson(data.data)
-    setting.data.ignoreColors = ['#ffffff']
+    // setting.data.ignoreColors = ['#ffffff']
     setting.save('./settings.json')
     settings = setting.data
 }
-
-
-
-let app = express()
-
-app.post('/draw', async (req, res) => {
-    res.send()
-    // delete aborting file
-    if (fs.existsSync(config.temp + config.abortingFile)) {
-        fs.unlinkSync(config.temp + config.abortingFile)
-    }
-    console.log('got draw request')
-    setting.fromFile('./settings.json')
-    setting.data.ignoreColors = ['#ffffff'] // for test purposes. will be removed later
-    // setting.data.ignoreColors = [] // for test purposes. will be removed later
-    setting.save('./settings.json')
-    position.fromFile('./positions.json')
-    position.save('./positions.json')
-
-
-    await drawManager.startDraw(setting, position)
-    drawManager.state = "idle"
-})
-
-app.get("/version", (req, res) => {
-    console.log("got version request")
-    res.send(package.version)
-})
-
-app.get("/guiName", (req, res) => {
-    console.log("got guiName request")
-    res.send(package.name)
-})
-
-app.get("/state", (req, res) => {
-    res.send(drawManager.state)
-})
-
-/*
-app.listen(config.port, () => {
-    console.log(`listening on port ${config.port}`)
-})
-//*/
-// console.log(positions)
-
-

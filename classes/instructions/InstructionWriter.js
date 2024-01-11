@@ -43,6 +43,15 @@ module.exports = class InstructionWriter {
         let instructions = []
         let ignoreColors = []
 
+        //bring settings.data.ignoredColors to the old format
+
+
+        for (let color in settings.data.ignoreColors) {
+            if (typeof color == 'string') {
+                ignoreColors.push(color)
+            }
+        }
+
         let position = positions.getPlatform(this.settings.platform)
 
         if (settings.data.positionOverride.enabled) {
@@ -311,9 +320,9 @@ module.exports = class InstructionWriter {
 
 
 
-                if (!settings.data.ignoreColors.includes(largestColor)) {
+                if (!ignoreColors.includes(largestColor)) {
 
-                    settings.data.ignoreColors = [largestColor]
+                    ignoreColors = [largestColor]
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.bucket.x,
@@ -362,7 +371,7 @@ module.exports = class InstructionWriter {
         let nextColor
 
 
-        console.log(`ignoring colors:`, settings.data.ignoreColors.concat(ignoreColors))
+        console.log(`ignoring colors:`, ignoreColors)
         console.log("writing instructions...")
         console.time("write")
         // console.log(colors)
@@ -383,7 +392,7 @@ module.exports = class InstructionWriter {
                     let hex = rgbToHex(rgba)
 
                     colorCache.push(hex)
-                    if (settings.data.ignoreColors.concat(ignoreColors).includes(hex)) continue
+                    if (ignoreColors.includes(hex)) continue
                     if (colorsInLine.includes(hex)) continue
                     // colorsInLine[hex] = colorsInLine[hex] ? colorsInLine[hex] + 1 : 1
                     colorsInLine.push(hex)
@@ -435,11 +444,11 @@ module.exports = class InstructionWriter {
                 }
 
                 // next color is the color that will be drawn after this one. that should NOT be a ignored color
-                nextColor = getNextKey(colors, color, settings.data.ignoreColors.concat(ignoreColors))
+                nextColor = getNextKey(colors, color, ignoreColors)
 
 
 
-                if (settings.data.ignoreColors.concat(ignoreColors).includes(color)) continue
+                if (ignoreColors.includes(color)) continue
 
                 // if (this.debug) {
                 //     this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)

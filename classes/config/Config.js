@@ -25,6 +25,7 @@ module.exports = class Config extends BaseConfig {
                 fontSize: 12,
             },
             communication: {
+                allowOnlyOneConnection: true,
                 keepAlive: {
                     interval: 1000,
                     messageSender: "ping",
