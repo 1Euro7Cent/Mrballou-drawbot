@@ -133,12 +133,39 @@ def updateGui(window):
                             wantsFontChanged = True
                             fontChangeTo = element["font"]
                         case "geometry":
-                            # print("Setting geometry")
-                            width = element["width"]
-                            height = element["height"]
+                            # # print("Setting geometry")
+                            # width = element["width"]
+                            # height = element["height"]
 
+                            # x = None
+                            # y = None
+
+                            # if "x" in element:
+                            #     x = element["x"]
+                            
+                            # if "y" in element:
+                            #     y = element["y"]
+
+                            # geomStr =""
+
+                            # if x and y:
+                            #     geomStr = "{}x{}+{}+{}".format(width,height,x, y)
+                            # else:
+                            #     geomStr = "{}x{}".format(width,height) 
+                            
+                            # # print("geomString {}".format(geomStr))
+                            # window.geometry(geomStr)
+
+                            width = None
+                            height = None
                             x = None
                             y = None
+
+                            if "width" in element:
+                                width = element["width"]
+
+                            if "height" in element:
+                                height = element["height"]
 
                             if "x" in element:
                                 x = element["x"]
@@ -148,13 +175,18 @@ def updateGui(window):
 
                             geomStr =""
 
-                            if x and y:
+                            if width and height and x and y:
                                 geomStr = "{}x{}+{}+{}".format(width,height,x, y)
-                            else:
-                                geomStr = "{}x{}".format(width,height) 
-                            
-                            # print("geomString {}".format(geomStr))
-                            window.geometry(geomStr)
+                            elif width and height:
+                                geomStr = "{}x{}".format(width,height)
+                            elif x and y:
+                                geomStr = "{}+{}".format(x, y)
+
+                            print("geomString {}".format(geomStr))
+
+                            if geomStr != "":
+                                window.geometry(geomStr)
+
                         case "title":
                             # print("Adding title element")
                             window.title(element["text"])

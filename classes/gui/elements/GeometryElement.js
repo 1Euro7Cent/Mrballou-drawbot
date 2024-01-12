@@ -1,18 +1,49 @@
 const BaseElement = require("./BaseElement")
 
 module.exports = class GeometryElement extends BaseElement {
+
+    constructor() {
+        super()
+        this.width = null
+        this.height = null
+        this.x = null
+        this.y = null
+    }
+
     /**
      * @param {number} width
-     * @param {number} height
-     * @param {number} [x]
-     * @param {number} [y]
+     * @returns {GeometryElement}
      */
-    constructor(width, height, x, y) {
-        super()
+    setWidth(width) {
         this.width = width
+        return this
+    }
+
+    /**
+     * @param {number} height
+     * @returns {GeometryElement}
+     */
+    setHeight(height) {
         this.height = height
+        return this
+    }
+
+    /**
+     * @param {number} x
+     * @returns {GeometryElement}
+     */
+    setX(x) {
         this.x = x
+        return this
+    }
+
+    /**
+     * @param {number} y
+     * @returns {GeometryElement}
+     */
+    setY(y) {
         this.y = y
+        return this
     }
 
     toJSON() {

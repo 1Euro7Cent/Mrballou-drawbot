@@ -23,6 +23,13 @@ module.exports = class Config extends BaseConfig {
             gui: {
                 font: "Consolas",
                 fontSize: 12,
+                geometry: {
+                    width: -1,
+                    height: -1,
+                    x: -1,
+                    y: -1
+                }
+
             },
             communication: {
                 allowOnlyOneConnection: true,

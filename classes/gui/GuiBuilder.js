@@ -41,11 +41,31 @@ module.exports = class GuiBuilder {
      * @returns {BaseElement[][]}
      */
     #buildMetadata() {
-        return [[
+        /**
+         * @type {BaseElement[][]}
+         */
+        let elements = [[
             new TextElement(`Version: ${this.metadata.version}`),
-            new GeometryElement(350, 550, -400, 300),
+            // new GeometryElement(350, 550, -400, 300),
             new FontElement(`${this.config.gui.font} ${this.config.gui.fontSize}`),
             new TitleElement(this.metadata.name)]]
+
+        let geom = this.config.gui.geometry
+        let geometry = new GeometryElement()
+        if (geom.width != -1) {
+            geometry.setWidth(geom.width)
+        }
+        if (geom.height != -1) {
+            geometry.setHeight(geom.height)
+        }
+        if (geom.x != -1) {
+            geometry.setX(geom.x)
+        }
+        if (geom.y != -1) {
+            geometry.setY(geom.y)
+        }
+        elements[0].push(geometry)
+        return elements
 
     }
 
