@@ -25,37 +25,48 @@ try {
 
 // make sure we have customtkinter installed
 
+let requiredPyPackages = ['customtkinter', 'CTkColorPicker']
+
 let cTkinterLocation = ''
+let locations = []
 
 let res = ""
-let tries = 0
-do {
-    try {
-        tries++
-        res = execSync('pip show customtkinter').toString()
-    } catch (e) {
-        console.log("customtkinter not installed. installing...")
-        execSync('pip install customtkinter')
+for (let package of requiredPyPackages) {
+    res = ""
+
+    let tries = 0
+    do {
+        try {
+            tries++
+            res = execSync(`pip show ${package}`).toString()
+        } catch (e) {
+            console.log(`${package} not installed. installing...`)
+            execSync(`pip install ${package}`)
+        }
     }
-}
-while (res == "" || tries > 2)
+    while (res == "" || tries > 2)
 
-if (res == "" || tries > 2) {
-    console.log("Couldn't install customtkinter / get the path. Aborting...")
-    process.exit(1)
-}
-
-res.split("\n").forEach(line => {
-    // console.log("line:", line)
-    if (line.startsWith('Location:')) {
-        cTkinterLocation = line.split('Location:')[1].trim()
-        return
+    if (res == "" || tries > 2) {
+        console.log(`Couldn't install ${package} / get the path. Aborting...`)
+        process.exit(1)
     }
-})
 
-cTkinterLocation += "/customtkinter;customtkinter/"
-console.log(cTkinterLocation)
+    res.split("\n").forEach(line => {
+        // console.log("line:", line)
+        if (line.startsWith('Location:')) {
+            // cTkinterLocation = line.split('Location:')[1].trim()
+            // return
+            locations.push(line.split('Location:')[1].trim() + `/${package};${package}/`)
+            return
+        }
+    })
+}
 
+
+// cTkinterLocation += "/customtkinter;customtkinter/"
+console.log(locations)
+
+// return
 
 //*
 // clean up
@@ -83,8 +94,14 @@ for (let file of cleanupFiles) {
 const commands = [
     "pkg index.temp.js -o ./dist/drawbot.exe",
     `pyinstaller --workpath "./temp" --onefile initializePositions.py`,
-    `pyinstaller --workpath "./temp" --onefile gui.py --add-data \"${cTkinterLocation}\"`
+    // `pyinstaller --workpath "./temp" --onefile gui.py --add-data \"${cTkinterLocation}\"`
 ]
+
+let mainFileInstall = "pyinstaller --workpath \"./temp\" --onefile gui.py"
+for (let location of locations) {
+    mainFileInstall += ` --add-data \"${location}\"`
+}
+commands.push(mainFileInstall)
 
 console.log(commands)
 // return
