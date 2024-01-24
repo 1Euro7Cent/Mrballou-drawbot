@@ -11,7 +11,7 @@
 
 ## This is a beta!
 
-If you have questions suggestions or bugs, please open an issue or send me a dm per dc(mrballou#9055)
+If you have questions suggestions or bugs, first read the FAQ. If not found please open an issue or send me a dm per Discord (mrballou)
 
 ## installation video (click image):
 
@@ -19,25 +19,17 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
 
 ## Important!
 
-* I forgot to mention in the video that you can abort the print by pressing the `esc` key or `q`(defineable in the config.json).
+* I forgot to mention in the video that you can abort the print by pressing the `esc` key or `q`(definable in the config.json).
 
 * Read the TOS from the website you want to draw on. If the website disallows such things don't draw with the bot on it.
-
-## Additional info:
-
-* When you install an update I recommend deleting `guiConfig.json`. That makes sure that the GUI is being displayed correctly.
-
-* You can redesign the GUI by editing the `guiConfig.json` file. The order of the array displays the order of the GUI elements.
 
 ## Installation
 
 * Go to releases.
 * Download the latest release.
 * Extract the zip file into a folder.
-* Run the `drawbot.exe`.
-* Close the window again.
 * Run `initializePositions.exe` and follow the instructions (abort/save with right click).
-* Run `drawbot.exe` again.
+* Run the `drawbot.exe`.
 * Run `gui.exe`.
 * Enjoy!
 
@@ -53,6 +45,13 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
 * To run the main bot run `node index.js`.
 * To run the GUI run `python gui.py`.
 
+## Support me
+
+I invest my free time into this project. If you want to support me, you can do so by donating to me via paypal. These donations will keep the project alive, free and help me to continue working on it.
+| <center>Paypal |
+| --- |
+| [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://paypal.me/thomasjRuhl)
+
 ## FAQ:
 
 * Does the bot work on katura?
@@ -60,17 +59,30 @@ If you have questions suggestions or bugs, please open an issue or send me a dm 
   
     I recommend settings like:
     - delay: `15`
-    - sort colors by: `size 9-0`
+    - sort colors by: `size 9-0` (so it draws the bulk first)
+    - onTimeDelay: `yes`
     - onTimeDelayMultiplyer: `0.6` (this makes it really slow but work)
     - fast: `yes`
     - line save: `yes`
     
     feel free to suggest other settings
 
+* It draws outside the boundary and/or not in the right spot
+  + Make sure that `Make everything bigger` and `scale and layout` in windows is set to 100%. (Settings -> System -> Display -> Scale and layout)
+
+* I have the error `Error: Could not find MIME for Buffer`
+  + Make sure that you have a valid image selected. valid image rules are:
+    - `your/path/to/image.png`(`.jpg`, `.jpeg`, `.gif`, `.bmp`, [See all supported formats](https://www.npmjs.com/package/jimp))
+    - `http(s)://example.com/image.png` (only works if the website allows it)
+    - `data:image/png;base64,<your base 64 data>`
+  + In 99.99% of cases you can rightclick an image in google and click `copy image address` and paste it into the Image field.
+
 * I have a "ConnectionError" please fix.
   + Is the server running? Since version `3.11.0` it tells you that in the console
+  + Since version `3.15.2` it tells you that in the GUI
 
-* If the GUI instantly crashes, try running the drawbot.exe and then the GUI. The drawbot.exe creates all necessary files for the GUI to work.
+* Where is the position override?
+  + The functionality of it has not been implemented in the GUI, yet.
 * The override position works like this:
   + press the override button.
   + Move the mouse to the top left corner where you want to override the position to.

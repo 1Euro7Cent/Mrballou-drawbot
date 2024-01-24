@@ -25,18 +25,21 @@ serverAddress = "http://localhost"
 
 wsConn = None
 
+reconnectRetries = 0
 
 def communication(cfg):
+    global reconnectRetries
     global wsConn
 
     senderPing = cfg['communication']['keepAlive']['messageSender']
     receiverPing = cfg['communication']['keepAlive']['messageReceiver']
 
     def onWsMessage(ws, message):
-
+        global reconnectRetries
         # keep alive
         if message == senderPing:
             ws.send(receiverPing)
+            reconnectRetries = 0
             # print("Got keep alive message")
             return
 
@@ -47,8 +50,26 @@ def communication(cfg):
         # print("data queue {}".format(dataQueue.queue))
 
     def onWsError(ws, error):
+        global reconnectRetries
         print("Got error {}".format(error))
-        sys.exit()
+        # handle no connection error
+        if "10061" in str(error):
+            reconnectRetries += 1
+            print("No connection to server")
+            print("trying to reconnect...")
+            dataQueue.put({
+                "type": "updateUI", 
+                "data": [[
+                        {"type": "label", "text": "No connection to server. Reconnecting... Try {}".format(reconnectRetries)}
+                    ],[
+                        {"type": "label", "text": "Is the server running?"}
+                    ]
+                    ]
+                })
+            wsConn.close()
+            wsConn.run_forever()    
+        else:
+            sys.exit()
     
     def onWsClose(ws):
         print("Got close")
@@ -61,6 +82,14 @@ def communication(cfg):
                                 on_close=onWsClose)
     
     print("establishing connection with server on port {}".format(cfg['port']))
+
+    dataQueue.put({
+        "type": "updateUI", 
+        "data": [[
+                {"type": "label", "text": "Connecting to server..."}
+            ]
+            ]
+        })
     wsConn.run_forever()
 
 
@@ -332,7 +361,7 @@ def negativeColor(hex):
 if __name__ == "__main__":
     print("Starting")
 
-    print(config) 
+    # print(config) 
     communicationThread = threading.Thread(target=communication, args=(config,))
     communicationThread.daemon = True
     communicationThread.start()
