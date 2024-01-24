@@ -4,7 +4,7 @@ robot.setMouseDelay(0)
 module.exports = class DrawInstruction {
 
     /**
-     * @param {"DOT" | "DRAG"| "DRAGNOTRELEASE" | "RELEASE"} type
+     * @param {"DOT" | "DRAG"| "DRAGNOTRELEASE" | "RELEASE" | "MOVE"} type
      * @param {{x1:number,y1:number, x2?:number, y2?:number, delay?:number, moveDelay?:number}} cords
      * @param {"left" | "right" | "middle"} [button]
      * @param {string} [comment]
@@ -23,7 +23,9 @@ module.exports = class DrawInstruction {
             throw new Error(`Cords are not numbers`)
         }
         if (this.cords.x1 == -1 || this.cords.y1 == -1) return
+        //return //during development to make sure it doesn't accidentally draw
 
+        // console.log("executing instruction: ", this)
         switch (this.type) {
             case "DOT":
                 if (this.cords.x1 == -1 || this.cords.y1 == -1) break
@@ -57,6 +59,9 @@ module.exports = class DrawInstruction {
                     robot.moveMouse(this.cords.x2, this.cords.y2)
                     robot.setMouseDelay(0)
                 }
+                break
+            case 'MOVE':
+                robot.moveMouse(this.cords.x1, this.cords.y1)
                 break
             case 'RELEASE':
                 robot.mouseToggle('up', this.button)

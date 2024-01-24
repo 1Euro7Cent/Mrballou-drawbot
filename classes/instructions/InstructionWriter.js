@@ -21,6 +21,9 @@ module.exports = class InstructionWriter {
         if (this.config.debug.enabled && this.config.debug.saveWrite.enabled) {
             this.debug = new DebugSaver(config)
         }
+        this.isAborting = false
+
+        this.logger = (...args) => { }
     }
 
     /**
@@ -30,6 +33,7 @@ module.exports = class InstructionWriter {
      * @param {Setting} settings
      */
     async write(img, positions, settings) {
+        this.isAborting = false
         this.settings = settings.data
 
         if (this.debug) {
@@ -39,7 +43,16 @@ module.exports = class InstructionWriter {
         let instructions = []
         let ignoreColors = []
 
-        let position = positions.getPlatform(this.settings.name)
+        //bring settings.data.ignoredColors to the old format
+
+
+        for (let color in settings.data.ignoreColors) {
+            if (typeof color == 'string') {
+                ignoreColors.push(color)
+            }
+        }
+
+        let position = positions.getPlatform(this.settings.platform)
 
         if (settings.data.positionOverride.enabled) {
             position.topleft = {
@@ -243,19 +256,73 @@ module.exports = class InstructionWriter {
             moveDelay: this.settings.moveDelay
         }, "left", 'INIT_WINDOW'))
 
+        let largestColor = Object.keys(colors).reduce((a, b) => colors[a] > colors[b] ? a : b)
+
+        if (this.settings.box || this.settings.bucket) {
+            let colPos = position.colors[largestColor]
+            instructions.push(new DrawInstruction('DOT', {
+                x1: colPos.x,
+                y1: colPos.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'SEL_LARGEST_COL'))
+        }
+
+        //box
+        if (this.settings.box) {
+            // add a perimeter around the image
+            let topAbs = relativeToAbsolute(img.bitmap.width - 1, 0, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('DRAGNOTRELEASE', {
+                x1: position.topleft.x + this.settings.distancing + offsets.x - 1,
+                y1: topAbs.y + offsets.y,
+                x2: topAbs.x + offsets.x,
+                y2: topAbs.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_TOP'))
+            let last = topAbs
+
+            let rightAbs = relativeToAbsolute(img.bitmap.width - 1, img.bitmap.height - 1, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('MOVE', {
+                x1: last.x + offsets.x,
+                y1: rightAbs.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_RIGHT'))
+            last = rightAbs
+
+            let bottomAbs = relativeToAbsolute(0, 0, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('MOVE', {
+                x1: bottomAbs.x + offsets.x,
+                y1: last.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_BOTTOM'))
+            last = bottomAbs
+
+            let leftAbs = relativeToAbsolute(0, 0, position, this.settings.distancing, 0, 0)
+            instructions.push(new DrawInstruction('MOVE', {
+                x1: last.x + offsets.x,
+                y1: leftAbs.y + offsets.y,
+                delay: this.settings.delay,
+                moveDelay: this.settings.moveDelay
+            }, "left", 'DRAW_LEFT'))
+
+            instructions.push(new DrawInstruction('RELEASE', { x1: 0, y1: 0 }, "left", 'RELEASE_LEFT'))
+
+
+        }
 
         // bucket 
-
         if (this.settings.bucket) {
             if (position.bucket?.x > 0 && position.bucket?.y > 0 &&
                 position.pen.x > 0 && position.pen.y > 0) {
 
 
-                let largestColor = Object.keys(colors).reduce((a, b) => colors[a] > colors[b] ? a : b)
 
-                if (!settings.data.ignoreColors.includes(largestColor)) {
+                if (!ignoreColors.includes(largestColor)) {
 
-                    settings.data.ignoreColors = [largestColor]
+                    ignoreColors = [largestColor]
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.bucket.x,
@@ -304,7 +371,7 @@ module.exports = class InstructionWriter {
         let nextColor
 
 
-        console.log(`ignoring colors:`, settings.data.ignoreColors.concat(ignoreColors))
+        console.log(`ignoring colors:`, ignoreColors)
         console.log("writing instructions...")
         console.time("write")
         // console.log(colors)
@@ -313,15 +380,19 @@ module.exports = class InstructionWriter {
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
                 console.timeLog("write", `writing line ${y}`)
+                this.logger(`Calculating...\nwriting line ${y}/${recolored.bitmap.height}`)
+                if (this.isAborting) return []
+                await sleep(5)
                 let colorsInLine = []
                 let colorCache = []
                 for (let x = 0; x < recolored.bitmap.width; x++) {
+                    if (this.isAborting) return []
                     let numb = recolored.getPixelColor(x, y)
                     let rgba = Jimp.intToRGBA(numb)
                     let hex = rgbToHex(rgba)
 
                     colorCache.push(hex)
-                    if (settings.data.ignoreColors.concat(ignoreColors).includes(hex)) continue
+                    if (ignoreColors.includes(hex)) continue
                     if (colorsInLine.includes(hex)) continue
                     // colorsInLine[hex] = colorsInLine[hex] ? colorsInLine[hex] + 1 : 1
                     colorsInLine.push(hex)
@@ -361,7 +432,10 @@ module.exports = class InstructionWriter {
             }
         }
         else {
+            let colorCounter = 0
+            let colorCount = objToArr(colors).length
             for (let color in colors) {
+                colorCounter++
 
                 // skip a color after two has been drawn at once
                 if (this.settings.dualColorMode && isSecondary) {
@@ -370,11 +444,11 @@ module.exports = class InstructionWriter {
                 }
 
                 // next color is the color that will be drawn after this one. that should NOT be a ignored color
-                nextColor = getNextKey(colors, color, settings.data.ignoreColors.concat(ignoreColors))
+                nextColor = getNextKey(colors, color, ignoreColors)
 
 
 
-                if (settings.data.ignoreColors.concat(ignoreColors).includes(color)) continue
+                if (ignoreColors.includes(color)) continue
 
                 // if (this.debug) {
                 //     this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
@@ -385,7 +459,11 @@ module.exports = class InstructionWriter {
 
 
                 process.stdout.write('    ')
-                console.timeLog("write", `writing color ${color} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`)
+                let logText = `writing color ${color} ${colorCounter}/${colorCount} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`
+                console.timeLog("write", logText)
+                this.logger("Calculating...\n" + logText)
+                if (this.isAborting) return []
+                await sleep(5)
                 // console.log("next color", nextColor)
 
 
@@ -441,6 +519,7 @@ module.exports = class InstructionWriter {
 
 
                 for (let y = 0; y < recolored.bitmap.height; y++) {
+                    if (this.isAborting) return []
                     for (let x = 0; x < recolored.bitmap.width; x++) {
                         let numb = recolored.getPixelColor(x, y)
                         let rgba = Jimp.intToRGBA(numb)
@@ -685,7 +764,7 @@ module.exports = class InstructionWriter {
             for (let i = 0; i < instructions.length; i++) {
                 let instruction = instructions[i]
                 if (instruction.cords.delay) {
-                    instruction.cords.delay += this.settings.onTimeDelayMultiplyer * i
+                    instruction.cords.delay += this.settings.onTimeDelayMultiplier * i
                 }
 
 
@@ -826,4 +905,10 @@ function rgbToHex(rgb) {
     if (g.length < 2) g = "0" + g
     if (b.length < 2) b = "0" + b
     return "#" + r + g + b
+}
+
+async function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms)
+    })
 }

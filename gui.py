@@ -1,573 +1,311 @@
 from pynput import keyboard, mouse
 # import tkinter as tk
-import customtkinter as tk
+import customtkinter as ctk
 import json
 import threading
 import sys
+import queue
 import requests
 import os
 import time
+import websocket as ws
+from CTkColorPicker import *
 
-# todo: rewrite this mess
+dataQueue = queue.Queue()
+valueQueue = queue.Queue()
 
 projectData = {}
 positionData = {}
 settingsData = {}
 guiData = {}
 
-requestingManualOverride = False
-manualOverrideVal = {
-    "enabled": False,
-    "x1": -1,
-    "y1": -1,
-    "x2": -1,
-    "y2": -1
-}
 
 
-sortColAlgs = [
-    "size 0-9",
-    "size 9-0",
-    "name A-Z",
-    "name Z-A",
-    "random",
-    "reverse"
-]
+serverAddress = "http://localhost"
 
-resizeImgAlgs = [
-    "fit",
-    "stretch",
-    "cropX",
-    "cropY",
-    "none"
-]
+wsConn = None
 
-positionImgAlgs = [
-    "topLeft",
-    "topCenter",
-    "topRight",
-    "centerLeft",
-    "center",
-    "centerRight",
-    "bottomLeft",
-    "bottomCenter",
-    "bottomRight"
-]
+reconnectRetries = 0
 
-ditherAlgs = [
-    "Floyd-Steinberg",
-]
+def communication(cfg):
+    global reconnectRetries
+    global wsConn
 
+    senderPing = cfg['communication']['keepAlive']['messageSender']
+    receiverPing = cfg['communication']['keepAlive']['messageReceiver']
 
-def getData(file):
-    print('reading data from ' + file)
-    if os.path.exists(file):
-        with open(file, "r") as f:
-            return json.load(f)
-    return {}
+    def onWsMessage(ws, message):
+        global reconnectRetries
+        # keep alive
+        if message == senderPing:
+            ws.send(receiverPing)
+            reconnectRetries = 0
+            # print("Got keep alive message")
+            return
 
+        # print("Got message {}".format(message))
+        data = json.loads(message)
+        # print(data)
+        dataQueue.put(data)
+        # print("data queue {}".format(dataQueue.queue))
 
-def getRC(data, name):
-    i = 0
-    j = 0
-    for row in data:
-        j = 0
-        for col in row:
-            if col == name:
-                return {
-                    "row": i,
-                    "col": j
-                }
-            j += 1
-        i += 1
-
-    return{
-        "row": -1,
-        "col": -1
-    }
+    def onWsError(ws, error):
+        global reconnectRetries
+        print("Got error {}".format(error))
+        # handle no connection error
+        if "10061" in str(error):
+            reconnectRetries += 1
+            print("No connection to server")
+            print("trying to reconnect...")
+            dataQueue.put({
+                "type": "updateUI", 
+                "data": [[
+                        {"type": "label", "text": "No connection to server. Reconnecting... Try {}".format(reconnectRetries)}
+                    ],[
+                        {"type": "label", "text": "Is the server running?"}
+                    ]
+                    ]
+                })
+            wsConn.close()
+            wsConn.run_forever()    
+        else:
+            sys.exit()
+    
+    def onWsClose(ws):
+        print("Got close")
+        sys.exit()
 
 
-def getPlatforms(data):
-    res = []
-    for platform in data:
-        res.append(platform)
-    return res
+    wsConn = ws.WebSocketApp("ws://localhost:{}".format(cfg['port']),
+                             on_message=onWsMessage,
+                                on_error=onWsError,
+                                on_close=onWsClose)
+    
+    print("establishing connection with server on port {}".format(cfg['port']))
+
+    dataQueue.put({
+        "type": "updateUI", 
+        "data": [[
+                {"type": "label", "text": "Connecting to server..."}
+            ]
+            ]
+        })
+    wsConn.run_forever()
 
 
-def manualOverride():
-    print("Manual override")
-    global requestingManualOverride
-    global manualOverrideVal
-    manualOverrideVal = {
-        "enabled": True,
-        "x1": -1,
-        "y1": -1,
-        "x2": -1,
-        "y2": -1
-    }
-    requestingManualOverride = True
-    print(manualOverrideVal)
+def onButton(buttonName):
+    print("Button pressed {}".format(buttonName))
+    data = {}
+    if not valueQueue.empty():
+        data = valueQueue.queue[0]
+    # print("Button pressed")
+    # print("dataToSync {}".format(data))
+    formattedData = {}
+    for val in data:
+        formattedData[val] = data[val].get()
 
 
-def resetManualOverride():
-    global manualOverrideVal
-    manualOverrideVal = {
-        "enabled": False,
-        "x1": -1,
-        "y1": -1,
-        "x2": -1,
-        "y2": -1
-    }
-    print(manualOverrideVal)
+    # wsConn.send(json.dumps({"type": "buttonPressed", "data": formattedData}))
+    # print("data to send")
+    # print(formattedData)
+    wsConn.send(json.dumps({"type": "buttonPressed", "button": buttonName, "data": formattedData}))
+    
+    # valueQueue.put(data)
 
+def updateGui(window):
+    # print("Updating gui check")
 
-def main(port):
+    #empty the queue
+    # while not valueQueue.empty():
+    #     valueQueue.get()
 
-    def loadData(data):
+    dataToSync = {}
+    # print("data queue {}".format(dataQueue.queue))
 
-        try:
-            platform.set(data['name'])
-            imageVal.set(data['img'])
-            speedVal.set(data['delay'])
-            distanceVal.set(data['distancing'])
-            sortVal.set(data['sortColors'])
-            ditherVal.set(data['dither'])
-            fastVal.set(data['fast'])
-            bucketVal.set(data['bucket'])
-            maxLinesVal.set(data['maxLines'])
-            colorDelayVal.set(data['colorDelay'])
-            moveDelayVal.set(data['moveDelay'])
-            sortColAlg.set(data['sortColAlg'])
-            ditherAlg.set(data['ditherAlg'])
-            lineSavingVal.set(data['lineSaving'])
-            onTimeDelayMultiplyerVal.set(data['onTimeDelayMultiplyer'])
-            onTimeDelayVal.set(data['onTimeDelay'])
-            imageResizeAlg.set(data['resizeImgAlg'])
-            positionImageAlg.set(data['positionImgAlg'])
-            dualColorModeVal.set(data['dualColorMode'])
-            onePassModeVal.set(data['onePassMode'])
-        except KeyError:
-            print("Error loading data")
-        checkData()
-        print('data loaded')
+    if not dataQueue.empty():
+        data = dataQueue.get()
+        # print("Got data from gui thread {}".format(data))
+        if data["type"] == "requestColor":
+            col = AskColor().get()
+            wsConn.send(json.dumps({"type": "color", "data": col}))
+            window.after(100, updateGui, window)
+            return
 
-    def checkData():
-
-        
-        try:
-            if speedVal.get() == '':
-                speedVal.set(1)
-        except tk.TclError:
-            speedVal.set(1)
-
-        try:
-            if distanceVal.get() == '':
-                distanceVal.set(1)
-        except tk.TclError:
-            distanceVal.set(1)
-
-        try:
-            if maxLinesVal.get() == '':
-                maxLinesVal.set(999999)
-        except tk.TclError:
-            maxLinesVal.set(999999)
-
-        try:
-            if colorDelayVal.get() == '':
-                colorDelayVal.set(1)
-        except tk.TclError:
-            colorDelayVal.set(1)
-
-        try:
-            if moveDelayVal.get() == '':
-                moveDelayVal.set(1)
-        except tk.TclError:
-            moveDelayVal.set(1)
-
-        try:
-            if onTimeDelayMultiplyerVal.get() == '':
-                onTimeDelayMultiplyerVal.set(0)
-        except tk.TclError:
-            onTimeDelayMultiplyerVal.set(0)
-
-        try:
-            if imageResizeAlg.get() == '':
-                imageResizeAlg.set(resizeImgAlgs[0])
-        except tk.TclError:
-            imageResizeAlg.set(resizeImgAlgs[0])
-
-        try:
-            if positionImageAlg.get() == '':
-                positionImageAlg.set(positionImgAlgs[0])
-        except tk.TclError:
-            positionImageAlg.set(positionImgAlgs[0])
-
+        if data["type"] == "updateUI":
+            valueQueue.queue = []
+            # print("Updating UI")
+            guiData = data["data"]
+            # print(guiData)
             
-        
+            for widget in window.winfo_children():
+                widget.destroy()
 
-    def combineData():
-        checkData()
-        res = {
-            "name": platform.get(),
-            "img": imageVal.get(),
-            "delay": float(speedVal.get()),
-            "distancing": float(distanceVal.get()),
-            "sortColors": sortVal.get(),
-            "dither": ditherVal.get(),
-            "fast": fastVal.get(),
-            "bucket": bucketVal.get(),
-            "maxLines": int(maxLinesVal.get()),
-            "colorDelay": float(colorDelayVal.get()),
-            "moveDelay": float(moveDelayVal.get()),
-            "sortColAlg": sortColAlg.get(),
-            "ditherAlg": ditherAlg.get(),
-            "lineSaving": lineSavingVal.get(),
-            "onTimeDelayMultiplyer": float(onTimeDelayMultiplyerVal.get()),
-            "onTimeDelay": onTimeDelayVal.get(),
-            "positionOverride": manualOverrideVal,
-            "resizeImgAlg": imageResizeAlg.get(),
-            "positionImgAlg": positionImageAlg.get(),
-            "dualColorMode": dualColorModeVal.get(),
-            "onePassMode": onePassModeVal.get()
-        }
-        return res
-
-    def saveConfig():
-        print('saving configuration')
-        data = combineData()
-        data["img"] = "" # don't save image path or even worse, the base64 encoded image
-        name = saveVal.get()
-
-        if name == '':
-            print('no name given')
-            return
-
-        jsonData = {}
-        if os.path.exists('saves.json'):
-            with open('saves.json', 'r') as f:
-                jsonData = json.load(f)
-
-        jsonData[name] = data
-
-        with open('saves.json', 'w') as f:
-            json.dump(jsonData, f)
-        saveVal.set('')
-
-        # todo: update content of option menu to load new save/config
-
-    def getSaves():
-        print('getting saves')
-        saves = []
-        if os.path.exists('saves.json'):
-            with open('saves.json', 'r') as f:
-                jsonData = json.load(f)
-                for key in jsonData:
-                    saves.append(key)
-        if len(saves) == 0:
-            saves.append('')
-        return saves
-
-    def getSaveData(name):
-        print('getting save data')
-        if os.path.exists('saves.json'):
-            with open('saves.json', 'r') as f:
-                jsonData = json.load(f)
-                return jsonData[name]
-        return {}
-
-    def startDraw():
-        print('starting draw')
-        if not isServerRunning():
-            print('server not running')
-            return
-
-        data = combineData()
-        with open('settings.json', 'w') as f:
-            json.dump(data, f)
-
-        requests.post('http://localhost:' + str(port) + '/draw')
-
-    def isServerRunning():
-        try:
-            getFromSerer('version')
-            return True
-        except:
-            return False
-
-    def getFromSerer(path):
-        print('getting data /' + path +' from server')
-        res = requests.get('http://localhost:' + str(port) + '/' + path)
-        
-        return res.text
-    
-    versionCode = ""
-    try:
-        versionCode = getFromSerer('version')
-    
-    except:
-        print('server not running')
-        exit()
+            rows = 0
+            wantsFontChanged = False
+            fontChangeTo =""
+            for row in guiData:
+                columns = 0 
+                # print("row {} {}".format(columns, rows))
+                # print("row {}".format(row))
+                rows += 1
+                # if element["type"] == "TextElement":
+                #     print("Adding text element")
+                #     ctk.CTkLabel(window, text=element["text"]).pack()
 
 
-    
-    positionData = getData("positions.json")
-    settingsData = getData("settings.json")
-    guiData = getData("guiConfig.json")
+                for element in row:
+                    # print("element {}".format(element))
+                    columns += 1
 
-    root = tk.CTk()
-    root.title(getFromSerer('guiName'))
-    # root.geometry('200x200')
+                    match element["type"]:
+                        case 'font':
+                            wantsFontChanged = True
+                            fontChangeTo = element["font"]
+                        case "geometry":
+                            # # print("Setting geometry")
+                            # width = element["width"]
+                            # height = element["height"]
 
-    pos = {
-        "row": -1,
-        "col": -1
-    }
-    # setting platform to draw
+                            # x = None
+                            # y = None
 
-    pos = getRC(guiData, 'platformText')
-    tk.CTkLabel(root, text='Platform').grid(row=pos["row"], column=pos["col"])
-    platform = tk.StringVar(root)
-    platforms = getPlatforms(positionData)
-    platformOpts = tk.CTkOptionMenu(root, variable=platform, values=platforms)
-    pos = getRC(guiData, 'platform')
-    platformOpts.grid(row=pos["row"], column=pos["col"])
+                            # if "x" in element:
+                            #     x = element["x"]
+                            
+                            # if "y" in element:
+                            #     y = element["y"]
 
-    # speed
-    pos = getRC(guiData, 'delayText')
-    speedVal = tk.StringVar(root)
-    tk.CTkLabel(root, text='Delay').grid(row=pos["row"], column=pos["col"])
-    speed = tk.CTkEntry(root, textvariable=speedVal)
-    pos = getRC(guiData, 'delay')
-    speed.grid(row=pos["row"], column=pos["col"])
+                            # geomStr =""
 
-    # distancing
-    pos = getRC(guiData, 'distanceText')
-    distanceVal = tk.StringVar(root)
-    tk.CTkLabel(root, text='Distance').grid(row=pos["row"], column=pos["col"])
-    distance = tk.CTkEntry(root, textvariable=distanceVal)
-    pos = getRC(guiData, 'distance')
-    distance.grid(row=pos["row"], column=pos["col"])
+                            # if x and y:
+                            #     geomStr = "{}x{}+{}+{}".format(width,height,x, y)
+                            # else:
+                            #     geomStr = "{}x{}".format(width,height) 
+                            
+                            # # print("geomString {}".format(geomStr))
+                            # window.geometry(geomStr)
 
-    # checkboxes
+                            width = None
+                            height = None
+                            x = None
+                            y = None
 
-    # dualColorMode
-    pos = getRC(guiData, 'dualColorMode')
-    dualColorModeVal = tk.BooleanVar()
-    dualColorMode = tk.CTkCheckBox(root, text='Dual color mode', variable=dualColorModeVal)
-    dualColorMode.grid(row=pos["row"], column=pos["col"])
+                            if "width" in element:
+                                width = element["width"]
 
-    # onePassMode
-    pos = getRC(guiData, 'onePassMode')
-    onePassModeVal = tk.BooleanVar()
-    onePassMode = tk.CTkCheckBox(root, text='One pass mode', variable=onePassModeVal)
-    onePassMode.grid(row=pos["row"], column=pos["col"])
+                            if "height" in element:
+                                height = element["height"]
 
+                            if "x" in element:
+                                x = element["x"]
+                            
+                            if "y" in element:
+                                y = element["y"]
 
-    # sort colors
-    pos = getRC(guiData, 'sortColors')
-    sortVal = tk.BooleanVar()
-    sort = tk.CTkCheckBox(root, text='Sort colors', variable=sortVal)
-    sort.grid(row=pos["row"], column=pos["col"])
+                            geomStr =""
 
-    # color sort alg
-    pos = getRC(guiData, 'sortColorsAlgorithmText')
-    tk.CTkLabel(root, text='Sort colors alg').grid(
-        row=pos["row"], column=pos["col"])
-    sortColAlg = tk.StringVar(root)
+                            if width and height and x and y:
+                                geomStr = "{}x{}+{}+{}".format(width,height,x, y)
+                            elif width and height:
+                                geomStr = "{}x{}".format(width,height)
+                            elif x and y:
+                                geomStr = "{}+{}".format(x, y)
 
-    sortColAlgOpts = tk.CTkOptionMenu(root, variable=sortColAlg, values=sortColAlgs)
-    pos = getRC(guiData, 'sortColorsAlgorithm')
-    sortColAlgOpts.grid(row=pos["row"], column=pos["col"])
+                            print("geomString {}".format(geomStr))
 
-    # image resize alg
-    pos = getRC(guiData, 'resizeImageAlgorithmText')
-    tk.CTkLabel(root, text='Image resize alg').grid(
-        row=pos["row"], column=pos["col"])
+                            if geomStr != "":
+                                window.geometry(geomStr)
 
-    imageResizeAlg = tk.StringVar(root)
-    imageResizeAlgOpts = tk.CTkOptionMenu(root, variable=imageResizeAlg, values=resizeImgAlgs)
-    pos = getRC(guiData, 'resizeImageAlgorithm')
-    imageResizeAlgOpts.grid(row=pos["row"], column=pos["col"])
+                        case "title":
+                            # print("Adding title element")
+                            window.title(element["text"])
+                        case "label":
+                            # print("Adding text element")
+                            if "color" in element:
+                                fgColor = element["color"]
+                                textColor = getTextColor(fgColor)
+                                print("fgColor {} textColor {}".format(fgColor, textColor))
+                                ctk.CTkLabel(window, text=element["text"],fg_color=fgColor, text_color=textColor, padx= 3 ).grid(row=rows, column=columns)
+                            else:
+                                ctk.CTkLabel(window, text=element["text"]).grid(row=rows, column=columns)
+                        case "checkbox": 
+                            # print("Adding checkbox element")
+                            checkBoxVal = ctk.BooleanVar(value=element["checked"])
+                            dataToSync[element["name"]] = checkBoxVal
+                            ctk.CTkCheckBox(window, text=element["text"], variable=checkBoxVal).grid(row=rows, column=columns)
+                            # dataToSync.append(checkBoxVal)
 
-    # position image alg
-    pos = getRC(guiData, 'positionImageAlgorithmText')
-    tk.CTkLabel(root, text='Position image alg').grid(
-        row=pos["row"], column=pos["col"])
+                        case "button":
+                            # print("Adding button element")
+                            btn = element["name"]
+                            ctk.CTkButton(window, text=element["text"], command=lambda button=btn: onButton(button)).grid(row=rows, column=columns)
+                            # ctk.CTkButton(window, text=element["text"], command=onButton).grid(row=rows, column=columns)
+                        case "entry":
+                            # print("Adding entry element")
+                            entryVal = ctk.StringVar(window)
+                            entryVal.set(element["content"])
+                            dataToSync[element["name"]] = entryVal
+                            ctk.CTkEntry(window, textvariable=entryVal).grid(row=rows, column=columns)
 
-    positionImageAlg = tk.StringVar(root)
-    positionImageAlgOpts = tk.CTkOptionMenu(
-        root, variable=positionImageAlg, values=positionImgAlgs)
-    pos = getRC(guiData, 'positionImageAlgorithm')
-    positionImageAlgOpts.grid(row=pos["row"], column=pos["col"])
+                        case "dropdown":
+                            # print("Adding dropdown element")
+                            dropdownVal = ctk.StringVar(window)
+                            if "selected" in element:
+                                dropdownVal.set(element["selected"])
+                            dataToSync[element["name"]] = dropdownVal
+                            # print("values {}".format(element["values"]))
+                            ctk.CTkOptionMenu(window, variable=dropdownVal, values=element["values"]).grid(row=rows, column=columns)
 
-    # dither
-    pos = getRC(guiData, 'dither')
-    ditherVal = tk.BooleanVar()
-    dither = tk.CTkCheckBox(root, text='Dither', variable=ditherVal)
-    dither.grid(row=pos["row"], column=pos["col"])
+        if wantsFontChanged:
+            fontName, fontSize = fontChangeTo.split(" ")
+            fontSize = int(fontSize)
+            for widget in window.winfo_children():
+                widget.configure(font=(fontName, fontSize))
 
-    # dither alg
-    pos = getRC(guiData, 'ditherAlgorithmText')
-    tk.CTkLabel(root, text='dither alg').grid(
-        row=pos["row"], column=pos["col"])
-    ditherAlg = tk.StringVar(root)
+    valueQueue.put(dataToSync)
+    # print("dataToSync {}".format(dataToSync))
 
-    ditherAlgOpts = tk.CTkOptionMenu(root, variable=ditherAlg, values=ditherAlgs)
-    pos = getRC(guiData, 'ditherAlgorithm')
-    ditherAlgOpts.grid(row=pos["row"], column=pos["col"])
-
-    # fast mode
-    pos = getRC(guiData, 'fastMode')
-    fastVal = tk.BooleanVar()
-    fast = tk.CTkCheckBox(root, text='Fast mode', variable=fastVal)
-    fast.grid(row=pos["row"], column=pos["col"])
-
-    # line saving mode
-    pos = getRC(guiData, 'lineSavingMode')
-    lineSavingVal = tk.BooleanVar()
-    lineSaving = tk.CTkCheckBox(
-        root, text='Line saving mode', variable=lineSavingVal)
-    lineSaving.grid(row=pos["row"], column=pos["col"])
-
-    # on time delay
-    pos = getRC(guiData, 'onTimeDelayMode')
-    onTimeDelayVal = tk.BooleanVar()
-    onTimeDelay = tk.CTkCheckBox(
-        root, text="on time delay mode", variable=onTimeDelayVal)
-    onTimeDelay.grid(row=pos["row"], column=pos["col"])
-
-    # on time delay threshold
-    pos = getRC(guiData, 'onTimeDelayText')
-    onTimeDelayMultiplyerVal = tk.StringVar(root)
-    tk.CTkLabel(root, text='On time delay multiplyer').grid(
-        row=pos["row"], column=pos["col"])
-    onTimeDelayMultiplyer = tk.CTkEntry(
-        root, textvariable=onTimeDelayMultiplyerVal)
-    pos = getRC(guiData, 'onTimeDelayMultiplyer')
-    onTimeDelayMultiplyer.grid(row=pos["row"], column=pos["col"])
-
-    # bucket
-    pos = getRC(guiData, 'bucket')
-    bucketVal = tk.BooleanVar()
-    bucket = tk.CTkCheckBox(root, text='Bucket', variable=bucketVal)
-    bucket.grid(row=pos["row"], column=pos["col"])
+    window.after(100, updateGui, window)
 
 
-    # ignore color
-    # todo: add check for valid color
-    # todo: add to settings
-    pos = getRC(guiData, 'ignoreColorText')
-    tk.CTkLabel(root, text='Ignore color').grid(row=pos["row"], column=pos["col"])
-    ignore = tk.CTkEntry(root)
-    pos = getRC(guiData, 'ignoreColor')
-    ignore.grid(row=pos["row"], column=pos["col"])
+def main():
+    window = ctk.CTk()
+    window.title("GUI")
 
-    # max lines
-    pos = getRC(guiData, 'maxLinesText')
-    maxLinesVal = tk.IntVar(root)
-    tk.CTkLabel(root, text='Max lines').grid(row=pos["row"], column=pos["col"])
-    maxLines = tk.CTkEntry(root, textvariable=maxLinesVal)
-    pos = getRC(guiData, 'maxLines')
-    maxLines.grid(row=pos["row"], column=pos["col"])
+    window.after(100, updateGui, window)
+    window.mainloop()
 
-    # delay between colors
-    pos = getRC(guiData, 'colorDelayText')
-    colorDelayVal = tk.StringVar(root)
-    tk.CTkLabel(root, text='Delay between colors').grid(
-        row=pos["row"], column=pos["col"])
-    colorDelay = tk.CTkEntry(root, textvariable=colorDelayVal)
-    pos = getRC(guiData, 'colorDelay')
-    colorDelay.grid(row=pos["row"], column=pos["col"])
-
-    # moveDelay
-    pos = getRC(guiData, 'moveDelayText')
-    moveDelayVal = tk.StringVar(root)
-    tk.CTkLabel(root, text='Press delay').grid(
-        row=pos["row"], column=pos["col"])
-    moveDelay = tk.CTkEntry(root, textvariable=moveDelayVal)
-    pos = getRC(guiData, 'moveDelay')
-    moveDelay.grid(row=pos["row"], column=pos["col"])
-
-    # image
-    pos = getRC(guiData, 'imageUrlText')
-    imageVal = tk.StringVar(root)
-    tk.CTkLabel(root, text='Image URL').grid(row=pos["row"], column=pos["col"])
-    image = tk.CTkEntry(root, textvariable=imageVal)
-    pos = getRC(guiData, 'imageUrl')
-    image.grid(row=pos["row"], column=pos["col"])
-
-    # draw button
-    pos = getRC(guiData, 'drawButton')
-    tk.CTkButton(root, text='Draw', command=startDraw).grid(
-        row=pos["row"], column=pos["col"])
-
-    # save / load configurations
-    # save
-    # tk.CTkLabel(root, text='Save configuration').grid(row=10, column=0)
-    pos = getRC(guiData, 'saveConfigButton')
-    saveVal = tk.StringVar(root)
-    tk.CTkButton(root, text='Save config',
-              command=saveConfig).grid(row=pos["row"], column=pos["col"])
-    save = tk.CTkEntry(root, textvariable=saveVal)
-    pos = getRC(guiData, 'saveConfig')
-    save.grid(row=pos["row"], column=pos["col"])
-
-    # load
-    pos = getRC(guiData, 'loadConfigButton')
-    tk.CTkButton(root, text='Load config',
-              command=lambda: loadData(getSaveData(loadVal.get()))).grid(row=pos["row"], column=pos["col"])
-
-    loadVal = tk.StringVar(root)
-    load = tk.CTkOptionMenu(root, variable=loadVal, values=getSaves())
-    pos = getRC(guiData, 'loadConfig')
-    load.grid(row=pos["row"], column=pos["col"])
-
-    # manual override stuff
-
-    pos = getRC(guiData, 'manualOverrideButton')
-
-    tk.CTkButton(root, text='Manual override', command=lambda: manualOverride()).grid(
-        row=pos["row"], column=pos["col"])
-
-    pos = getRC(guiData, 'manualOverrideResetButton')
-    tk.CTkButton(root, text='Reset manual override', command=lambda: resetManualOverride(
-    )).grid(row=pos["row"], column=pos["col"])
-
-    # version
-    version = tk.CTkLabel(root, text="Version: " + versionCode)
-    version.grid()
-
-    loadData(settingsData)
-    root.mainloop()
 
 
 def onPress(key):
     if key == keyboard.Key.esc or key == keyboard.KeyCode.from_char(config['abortKey']):
         print("Aborting")
         # create a new json file
-        with open(path, 'w') as f:
-            json.dump({"abort": True}, f)
+        wsConn.send("stop")
+        # with open(path, 'w') as f:
+        #     json.dump({"abort": True}, f)
 
 
 def onClick(x, y, button, pressed):
-    global manualOverrideVal
-    global requestingManualOverride
-    if requestingManualOverride and pressed and button == mouse.Button.left:
-        print("Manual overrise pressed at {} {}".format(x, y))
+    ""
+    # global manualOverrideVal
+    # global requestingManualOverride
+    # if requestingManualOverride and pressed and button == mouse.Button.left:
+    #     print("Manual overrise pressed at {} {}".format(x, y))
 
-       # if x1 and y1 are not set, set them to the current position
-       # the same for x2 and y2 but with the next click
-        if manualOverrideVal["x1"] < 0 or manualOverrideVal["y1"] < 0:
-            manualOverrideVal["x1"] = x
-            manualOverrideVal["y1"] = y
-        else:
+    #    # if x1 and y1 are not set, set them to the current position
+    #    # the same for x2 and y2 but with the next click
+    #     if manualOverrideVal["x1"] < 0 or manualOverrideVal["y1"] < 0:
+    #         manualOverrideVal["x1"] = x
+    #         manualOverrideVal["y1"] = y
+    #     else:
 
-            if manualOverrideVal["x2"] < 0 or manualOverrideVal["y2"] < 0:
-                manualOverrideVal["x2"] = x
-                manualOverrideVal["y2"] = y
-                requestingManualOverride = False
+    #         if manualOverrideVal["x2"] < 0 or manualOverrideVal["y2"] < 0:
+    #             manualOverrideVal["x2"] = x
+    #             manualOverrideVal["y2"] = y
+    #             requestingManualOverride = False
 
-                print(manualOverrideVal)
+    #             print(manualOverrideVal)
 
 
 config = {}
@@ -589,10 +327,46 @@ def mouseListener():
         l.join()
 
 
+# a function that decides weather the most readable color for a given background color is black or white
+def getTextColor(hex):
+    hex = hex.replace("#", "")
+    r = int(hex[0:2], 16)
+    g = int(hex[2:4], 16)
+    b = int(hex[4:6], 16)
+
+    # print("r {} g {} b {}".format(r, g, b))
+    # print("r+g+b {}".format(r+g+b))
+    if r+g+b > 382:
+        return "#000000"
+    else:
+        return "#ffffff"
+
+
+def negativeColor(hex):
+    hex = hex.replace("#", "")
+    r = int(hex[0:2], 16)
+    g = int(hex[2:4], 16)
+    b = int(hex[4:6], 16)
+
+    r = 255 - r
+    g = 255 - g
+    b = 255 - b
+
+    return "#%02x%02x%02x" % (r, g, b)
+
+# print(negativeColor("#000000"))
+# print(negativeColor("#ffffff"))
+# print(negativeColor("#ff0000"))
+
 if __name__ == "__main__":
     print("Starting")
 
-    guiThread = threading.Thread(target=main, args=(config['port'],))
+    # print(config) 
+    communicationThread = threading.Thread(target=communication, args=(config,))
+    communicationThread.daemon = True
+    communicationThread.start()
+
+    guiThread = threading.Thread(target=main)
     guiThread.daemon = True
     guiThread.start()
 
@@ -607,6 +381,10 @@ if __name__ == "__main__":
     while True:
         if not guiThread.is_alive():
             print("GUI thread died... exiting")
+            sys.exit()
+        
+        if not communicationThread.is_alive():
+            print("websocket thread died... exiting")
             sys.exit()
 
         if not keyboardThread.is_alive():

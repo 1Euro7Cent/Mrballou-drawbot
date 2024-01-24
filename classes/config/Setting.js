@@ -6,7 +6,7 @@ module.exports = class Setting extends BaseConfig {
         super(name, prettify)
 
         this.data = {
-            name: "paint",
+            platform: "paint",
             img: './img/test.png',
             dither: false,
             fast: true,
@@ -15,14 +15,16 @@ module.exports = class Setting extends BaseConfig {
             delay: 1,
             colorDelay: 0,
             moveDelay: 0,
-            ignoreColors: ['#ffffff'],
+            ignoreColors: {
+
+            },
             sortColAlg: "size 0-9",
             resizeImgAlg: "fit",
             positionImgAlg: "center",
             bucket: false,
             lineSaving: false,
             onTimeDelay: false,
-            onTimeDelayMultiplyer: 1,
+            onTimeDelayMultiplier: 1,
             positionOverride: {
                 enabled: false,
                 x1: 0,
@@ -32,6 +34,7 @@ module.exports = class Setting extends BaseConfig {
             },
             dualColorMode: false,
             onePassMode: false,
+            box: false,
         }
 
     }
