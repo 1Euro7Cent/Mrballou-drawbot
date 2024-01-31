@@ -7,6 +7,7 @@ const Positions = require("../config/Positions")
 const DebugSaver = require("./../DebugSaver")
 
 module.exports = class InstructionWriter {
+    #preSendIndex = 0
     /**
      * @param {Config} config
      */
@@ -24,6 +25,14 @@ module.exports = class InstructionWriter {
         this.isAborting = false
 
         this.logger = (...args) => { }
+        /**
+         * @type {function(DrawInstruction[]):void}
+         */
+        this.partialFinish = () => { }
+
+        this.isWriting = false
+
+
     }
 
     /**
@@ -31,10 +40,13 @@ module.exports = class InstructionWriter {
      * @returns {Promise<DrawInstruction[]>}
      * @param {Positions} positions
      * @param {Setting} settings
+     * @param {function(DrawInstruction[]):void} [partialFinish] this gets called when a instruction write is finished
      */
-    async write(img, positions, settings) {
+    async write(img, positions, settings, partialFinish) {
+        this.isWriting = true
         this.isAborting = false
         this.settings = settings.data
+        if (typeof partialFinish == 'function') this.partialFinish = partialFinish
 
         if (this.debug) {
             this.debug.instructionPixels = []
@@ -53,6 +65,7 @@ module.exports = class InstructionWriter {
         }
 
         let position = positions.getPlatform(this.settings.platform)
+        this.positions = position
 
         if (settings.data.positionOverride.enabled) {
             position.topleft = {
@@ -313,6 +326,8 @@ module.exports = class InstructionWriter {
 
         }
 
+        await this.#sendPartial(instructions)
+
         // bucket 
         if (this.settings.bucket) {
             if (position.bucket?.x > 0 && position.bucket?.y > 0 &&
@@ -359,6 +374,8 @@ module.exports = class InstructionWriter {
             else {
                 console.log("Bucket not found")
             }
+            await this.#sendPartial(instructions)
+
         }
 
         /**
@@ -379,6 +396,8 @@ module.exports = class InstructionWriter {
             // draw the whole image in one pass. is is much slower because it has to change colors dozens of times, but is more satisfying to watch
 
             for (let y = 0; y < recolored.bitmap.height; y++) {
+                await this.#sendPartial(instructions)
+
                 console.timeLog("write", `writing line ${y}`)
                 this.logger(`Calculating...\nwriting line ${y}/${recolored.bitmap.height}`)
                 if (this.isAborting) return []
@@ -462,6 +481,8 @@ module.exports = class InstructionWriter {
                 let logText = `writing color ${color} ${colorCounter}/${colorCount} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`
                 console.timeLog("write", logText)
                 this.logger("Calculating...\n" + logText)
+                await this.#sendPartial(instructions)
+
                 if (this.isAborting) return []
                 await sleep(5)
                 // console.log("next color", nextColor)
@@ -696,86 +717,138 @@ module.exports = class InstructionWriter {
         }
 
         // return
-
-
-        // make shure EVERY draw instruction is in bounds
-
-        for (let instruction of instructions) {
-
-            // dot operations
-            if (instruction.type == 'DOT' && instruction.comment.toLowerCase().includes("draw")) {
-                let pos = instruction.cords
-                if (pos.x1 < position.topleft.x || pos.y1 < position.topleft.y || pos.x1 > position.bottomright.x || pos.y1 > position.bottomright.y) {
-                    instruction.comment = "OUT_OF_BOUNDS"
-                }
-            }
-
-
-            // drag operations. when out of bounds make them in bounds
-            if (instruction.type == 'DRAG' && instruction.comment.toLowerCase().includes("draw")) {
-                let pos = instruction.cords
-                if (pos.x1 < position.topleft.x || pos.y1 < position.topleft.y) {
-                    instruction.comment = "OUT_OF_BOUNDS"
-                }
-
-                if (typeof pos.x2 == 'number' && typeof pos.y2 == 'number') {
-                    // making in bounds
-                    if (pos.x2 < position.topleft.x) pos.x2 = position.topleft.x
-
-                    if (pos.y2 < position.topleft.y) pos.y2 = position.topleft.y
-                    if (pos.x2 > position.bottomright.x) pos.x2 = position.bottomright.x
-                    if (pos.y2 > position.bottomright.y) pos.y2 = position.bottomright.y
-
-
-                    if (pos.x1 < position.topleft.x) pos.x1 = position.topleft.x
-                    if (pos.y1 < position.topleft.y) pos.y1 = position.topleft.y
-
-
-                    if (pos.x1 > position.bottomright.x) pos.x1 = position.bottomright.x
-                    if (pos.y1 > position.bottomright.y) pos.y1 = position.bottomright.y
+        instructions = removeUnwantedInstructions(instructions, position)
+        instructions = addOnTimeDelay(instructions, this.settings)
 
 
 
-                    instruction.cords = pos
-                }
-            }
-        }
-
-        // remove every out of bounds
-        instructions = instructions.filter(i => i.comment !== 'OUT_OF_BOUNDS')
-
+        // return []
         console.log(`Done! Created ${instructions.length} instructions.`)
         // console.timeLog()
         console.timeEnd('write')
+        this.isWriting = false
 
+        return instructions
+        // return removeUnwantedInstructions(instructions, position)
+    }
+    /**
+     * @param {DrawInstruction[]} instructions
+     */
+    async  #sendPartial(instructions) {
+        if (!this.positions) return
+        let partial = instructions.slice(this.#preSendIndex)
+        this.#preSendIndex = instructions.length
+        partial = removeUnwantedInstructions(partial, this.positions)
+        partial = addOnTimeDelay(partial, this.settings)
+        this.partialFinish(partial)
+        if (this.settings?.startBeforeFinished) {
+            await sleep(100)
 
-        if (this.debug) {
-            this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
-
-
-
-            this.debug.instructionPixels = instructionsToDebug(instructions, position, this.settings.distancing)
-            await this.debug.makeImage()
         }
 
-        // add onTimeDelay to all instructions
+    }
 
-        if (this.settings.onTimeDelay) {
-            for (let i = 0; i < instructions.length; i++) {
-                let instruction = instructions[i]
-                if (instruction.cords.delay) {
-                    instruction.cords.delay += this.settings.onTimeDelayMultiplier * i
-                }
+}
 
+/**
+ * @param {DrawInstruction[]} instructions
+ * @param {{ topleft: { x: number; y: number; }; bottomright: { x: number; y: number; }; }} position
+ * @returns {DrawInstruction[]}
+ */
+function removeUnwantedInstructions(instructions, position) {
 
+    // make shure EVERY draw instruction is in bounds
+
+    for (let instruction of instructions) {
+
+        // dot operations
+        if (instruction.type == 'DOT' && instruction.comment.toLowerCase().includes("draw")) {
+            let pos = instruction.cords
+            if (pos.x1 < position.topleft.x || pos.y1 < position.topleft.y || pos.x1 > position.bottomright.x || pos.y1 > position.bottomright.y) {
+                instruction.comment = "OUT_OF_BOUNDS"
             }
         }
 
-        // return []
 
-        return instructions
+        // drag operations. when out of bounds make them in bounds
+        if (instruction.type == 'DRAG' && instruction.comment.toLowerCase().includes("draw")) {
+            let pos = instruction.cords
+            if (pos.x1 < position.topleft.x || pos.y1 < position.topleft.y) {
+                instruction.comment = "OUT_OF_BOUNDS"
+            }
+
+            if (typeof pos.x2 == 'number' && typeof pos.y2 == 'number') {
+                // making in bounds
+                if (pos.x2 < position.topleft.x) pos.x2 = position.topleft.x
+
+                if (pos.y2 < position.topleft.y) pos.y2 = position.topleft.y
+                if (pos.x2 > position.bottomright.x) pos.x2 = position.bottomright.x
+                if (pos.y2 > position.bottomright.y) pos.y2 = position.bottomright.y
+
+
+                if (pos.x1 < position.topleft.x) pos.x1 = position.topleft.x
+                if (pos.y1 < position.topleft.y) pos.y1 = position.topleft.y
+
+
+                if (pos.x1 > position.bottomright.x) pos.x1 = position.bottomright.x
+                if (pos.y1 > position.bottomright.y) pos.y1 = position.bottomright.y
+
+
+
+                instruction.cords = pos
+            }
+        }
     }
+
+    // remove every out of bounds
+    instructions = instructions.filter(i => i.comment !== 'OUT_OF_BOUNDS')
+
+
+
+
+    /*
+    if (this.debug) {
+        this.debug.drawnPixels = this.debug.drawnPixels.concat(drawnPixels)
+
+
+
+        this.debug.instructionPixels = instructionsToDebug(instructions, position, this.settings.distancing)
+        await this.debug.makeImage()
+    }
+    //*/
+
+    // add onTimeDelay to all instructions
+
+    /*
+    if (this.settings.onTimeDelay) {
+        for (let i = 0; i < instructions.length; i++) {
+            let instruction = instructions[i]
+            if (instruction.cords.delay) {
+                instruction.cords.delay += this.settings.onTimeDelayMultiplier * i
+            }
+
+
+        }
+    }
+    //*/
+
+
+    return instructions
+
 }
+
+function addOnTimeDelay(instructions, settings) {
+    if (!settings.onTimeDelay) return instructions
+    for (let i = 0; i < instructions.length; i++) {
+        let instruction = instructions[i]
+        if (instruction.cords.delay) {
+            instruction.cords.delay += settings.onTimeDelayMultiplier * i
+        }
+    }
+
+    return instructions
+}
+
 
 /**
  * @param {DrawInstruction[]} instructions

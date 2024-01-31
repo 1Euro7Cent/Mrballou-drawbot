@@ -191,7 +191,7 @@ module.exports = class GuiBuilder {
             [new CheckBoxElement("fast", "Fast mode", settings.data.fast), new CheckBoxElement("bucket", "Bucket", settings.data.bucket)],
             [new CheckBoxElement("lineSaving", "Line saving mode", settings.data.lineSaving), new CheckBoxElement("onTimeDelay", "On time delay", settings.data.onTimeDelay)],
             [new CheckBoxElement("dualColorMode", "Dual color mode", settings.data.dualColorMode), new CheckBoxElement("onePassMode", "One pass mode", settings.data.onePassMode)],
-            [new CheckBoxElement("box", "Box", settings.data.box),],
+            [new CheckBoxElement("box", "Box", settings.data.box), new CheckBoxElement("startBeforeFinished", "Start Before Finished", settings.data.startBeforeFinished)],
 
             [new TextElement("On time delay multiplier"), new EntryElement("onTimeDelayMultiplier", settings.data.onTimeDelayMultiplier)],
             [new TextElement("Sort colors alg"), new DropdownElement("sortColAlg", [

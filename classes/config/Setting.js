@@ -35,6 +35,7 @@ module.exports = class Setting extends BaseConfig {
             dualColorMode: false,
             onePassMode: false,
             box: false,
+            startBeforeFinished: false,
         }
 
     }

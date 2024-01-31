@@ -178,7 +178,89 @@ module.exports = class DrawManager {
         }
 
         this.state = "writing instructions"
-        let instructions = await this.instructionWriter.write(img, positions, settings)
+        /**
+         * @type {import('./instructions/DrawInstruction')[]}
+         */
+        let instructionQueue = []
+
+        /**
+         * @type {NodeJS.Timeout}
+         */
+        let instructionClock
+
+
+        if (settings.data.startBeforeFinished) {
+            let isWorking = false
+
+            instructionClock = setInterval(async () => {
+                if (this.state !== "partial draw") {
+                    console.time("draw")
+                    this.state = "partial draw"
+                }
+
+                if (instructionQueue.length > 0 && !isWorking) {
+                    isWorking = true
+                    console.log(`Drawing ${instructionQueue.length} partial instructions...`)
+
+                    // for (let instruction of instructions) {
+                    while (instructionQueue.length > 0 && !this.isAborting) {
+                        let currentInstruction = instructionQueue.shift()
+                        if (!currentInstruction) {
+                            isWorking = false
+                            return
+                        }
+                        this.#broadcastToGuiWD(`Drawing ${instructionQueue.length} partial instructions...`)
+                        // console.log(`Drawing instruction ${currentInstruction.type}...`)
+                        if (this.isAborting) {
+                            this.state = "idle"
+                            console.log("aborted")
+                            clearInterval(instructionClock)
+                            this.guiBuilder.buildSelection(settings, positions).serve()
+                            return
+                        }
+                        await currentInstruction.execute()
+                    }
+
+                    isWorking = false
+
+
+                    if (instructionQueue.length <= 0 && !this.instructionWriter.isWriting && !instructionClock._destroyed) {
+                        this.state = "idle"
+                        console.timeEnd("total")
+                        console.timeEnd("draw")
+                        this.guiBuilder.buildSelection(settings, positions).serve()
+                        clearInterval(instructionClock)
+                        return
+                    }
+                }
+                else {
+                    // console.log("skipping partial draw iteration")
+                }
+                if (this.isAborting) {
+                    this.state = "idle"
+                    console.log("aborted")
+                    clearInterval(instructionClock)
+                    this.guiBuilder.buildSelection(settings, positions).serve()
+                    return
+                }
+
+            }, 100)
+        }
+
+
+        let instructions = await this.instructionWriter.write(img, positions, settings, async (instructions) => {
+            if (settings.data.startBeforeFinished) {
+                instructionQueue.push(...instructions)
+                // console.log(instructions[0])
+            }
+
+        })
+        this.instructionWriter.isWriting = false
+        if (settings.data.startBeforeFinished) {
+            console.log("skipping final draw")
+
+            return
+        }
 
         this.state = "drawing"
         // console.log(instructions)
@@ -229,6 +311,8 @@ module.exports = class DrawManager {
 
             if (this.isAborting) {
                 this.state = "idle"
+                console.timeEnd("draw")
+                console.timeEnd("total")
                 console.log("aborted")
                 break
             }
