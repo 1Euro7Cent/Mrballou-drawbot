@@ -28,6 +28,13 @@ module.exports = class GuiBuilder {
         this.ws = ws
         this.config = config.data
         this.saves = saves
+        this.isCheckingForUpdates = false
+        this.isUpdateAvailable = false
+        this.updateCheckFailed = false
+        this.checkForUpdates = true
+        this.latestVersion = "unknown"
+        this.isLatestVersion = false
+        this.checkForUpdatesPreRelease = false
         // console.log("gui builder", this.config)
     }
     gotReqCol(color) {
@@ -40,15 +47,53 @@ module.exports = class GuiBuilder {
 
      * @returns {BaseElement[][]}
      */
-    #buildMetadata() {
+    #buildMetadata(type) {
+        let versionText = ``
+        if (this.isUpdateAvailable || this.isCheckingForUpdates) {
+            if (!this.checkForUpdates) {
+                versionText += " (update check disabled)"
+            }
+            if (this.updateCheckFailed) {
+                versionText += " (update check failed)"
+            }
+            if (this.isCheckingForUpdates) {
+                versionText += " (checking for updates)"
+            }
+            else {
+                // versionText += ` (latest version: ${this.latestVersion} ${this.checkForUpdatesPreRelease ? "pre-release" : "release"})`
+                versionText += ` (Latest: ${this.latestVersion}${this.checkForUpdatesPreRelease ? " pre-release" : ""})`
+            }
+        }
+        else {
+            versionText += " (latest version)"
+        }
+
+        /**
+         * @type {BaseElement[]}
+         */
+        let textElements = []
+
+        // if (type == "calc") {
+        //     textElements.push(new TextElement(`Version: ${this.metadata.version}` + versionText))
+        // }
+        // else {
+        //     textElements.push(new TextElement(`Version: ${this.metadata.version}`), new TextElement(versionText))
+        // }
+
         /**
          * @type {BaseElement[][]}
          */
         let elements = [[
-            new TextElement(`Version: ${this.metadata.version}`),
+            // new TextElement(`Version: ${this.metadata.version}`), new TextElement(versionText),
             // new GeometryElement(350, 550, -400, 300),
             new FontElement(`${this.config.gui.font} ${this.config.gui.fontSize}`),
             new TitleElement(this.metadata.name)]]
+        if (type == "calc") {
+            elements.unshift([new TextElement(`Version: ${this.metadata.version}` + versionText)])
+        }
+        else {
+            elements.unshift([new TextElement(`Version: ${this.metadata.version}`), new TextElement(versionText)])
+        }
 
         let geom = this.config.gui.geometry
         let geometry = new GeometryElement()
@@ -72,9 +117,10 @@ module.exports = class GuiBuilder {
     /**
      * @param {BaseElement[][]} elements
      * @param {"updateUI"} type
+     * @param {string} [forWhat]
      */
-    #insertBase(elements, type) {
-        let metadata = this.#buildMetadata()
+    #insertBase(elements, type, forWhat = "") {
+        let metadata = this.#buildMetadata(forWhat)
 
         let data = {
             type: type,
@@ -258,7 +304,7 @@ module.exports = class GuiBuilder {
         // data.data = elements.concat(metadata)
 
         // return new Gui(data, this)
-        return this.#insertBase(elements, "updateUI")
+        return this.#insertBase(elements, "updateUI", "calc")
     }
 
 

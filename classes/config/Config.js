@@ -5,6 +5,8 @@ module.exports = class Config extends BaseConfig {
         super(name, prettify)
 
         this.data = {
+            checkForUpdates: true,
+            checkForUpdatesPreRelease: false, // if true, it will check for pre-releases
             temp: './temp/',
             abortingFile: "aborting.json",
             port: 25600,

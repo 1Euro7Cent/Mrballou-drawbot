@@ -1,6 +1,7 @@
 const fs = require('fs')
 const express = require('express')
 const ws = require('ws')
+const axios = require('axios')
 
 const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
@@ -10,6 +11,18 @@ const GuiBuilder = require('./classes/gui/GuiBuilder')
 
 
 let package = {} // DON'T CHANGE THIS LINE OTHERWISE THE BUILD WILL NOT SUCCEED
+
+let versions = {
+    latest: "unknown",  // latest version
+    latestStable: "unknown", // latest stable version. latest version not marked as pre-release
+}
+let isCheckingForUpdates = false
+let updateCheckFailed = false
+let isUpdateAvailable = {
+    latest: false,
+    latestStable: false
+}
+let tellGui
 
 try {
     package = require('./package.json')
@@ -40,6 +53,30 @@ if (!fs.existsSync(config.temp)) {
 
 }
 
+if (config.checkForUpdates) {
+    console.log('checking for updates')
+    isCheckingForUpdates = true
+    axios.get('https://api.github.com/repos/1Euro7Cent/Mrballou-drawbot/releases')
+        .then((res) => {
+            let latest = res.data[0]
+            let latestStable = res.data.find((release) => !release.prerelease)
+            versions.latest = latest.tag_name
+            versions.latestStable = latestStable.tag_name
+            isCheckingForUpdates = false
+            isUpdateAvailable.latest = latest.tag_name != package.version
+            isUpdateAvailable.latestStable = latestStable.tag_name != package.version
+            console.log(`latest version: ${versions.latest} ${isUpdateAvailable.latest ? "update available" : "no update available"}`)
+            console.log(`latest stable version: ${versions.latestStable} ${isUpdateAvailable.latestStable ? "update available" : "no update available"}`)
+            tellGuiUpdateInfos()
+        })
+        .catch((e) => {
+            console.error(e)
+            isCheckingForUpdates = false
+            updateCheckFailed = true
+            tellGuiUpdateInfos()
+        })
+
+}
 
 //*
 let setting = new Setting(undefined, config.prettifyData)
@@ -77,6 +114,10 @@ wss.on('connection', (ws) => {
         return
     }
     let guiBuilder = new GuiBuilder(package, ws, config_, saves)
+    guiBuilder.checkForUpdates = config.checkForUpdates
+    guiBuilder.isCheckingForUpdates = isCheckingForUpdates
+    guiBuilder.updateCheckFailed = updateCheckFailed
+    tellGui = guiBuilder
     connected = true
     let drawManager = new DrawManager(config_, guiBuilder)
 
@@ -246,4 +287,31 @@ function loadAndSetData(data) {
     // setting.data.ignoreColors = ['#ffffff']
     setting.save('./settings.json')
     settings = setting.data
+}
+
+
+let tellClock
+function tellGuiUpdateInfos() {
+    function setData() {
+        tellGui.checkForUpdates = config.checkForUpdates
+        tellGui.isCheckingForUpdates = isCheckingForUpdates
+        tellGui.updateCheckFailed = updateCheckFailed
+        tellGui.checkForUpdatesPreRelease = config.checkForUpdatesPreRelease
+        tellGui.isUpdateAvailable = config.checkForUpdatesPreRelease ? isUpdateAvailable.latest : isUpdateAvailable.latestStable
+        tellGui.latestVersion = config.checkForUpdatesPreRelease ? versions.latest : versions.latestStable
+        clearInterval(tellClock)
+        return
+    }
+
+    if (tellGui instanceof GuiBuilder) {
+        setData()
+    }
+    else {
+        tellClock = setInterval(() => {
+            if (tellGui instanceof GuiBuilder) {
+                setData()
+            }
+        }, 100)
+    }
+
 }
