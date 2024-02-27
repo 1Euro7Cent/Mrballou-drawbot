@@ -40,6 +40,7 @@ module.exports = class InstructionWriter {
             this.debug.instructionPixels = []
             this.debug.srCImage = img
         }
+        /** @type {DrawInstruction[]}*/
         let instructions = []
         let ignoreColors = []
 
@@ -260,12 +261,17 @@ module.exports = class InstructionWriter {
 
         if (this.settings.box || this.settings.bucket) {
             let colPos = position.colors[largestColor]
+            instructions = addColor(instructions, colPos, this.settings.delay + this.settings.colorDelay, this.settings.moveDelay, {
+                clickToExpand: position.clickToExpand,
+                clickToClose: position.clickToClose
+            })
+            /*
             instructions.push(new DrawInstruction('DOT', {
                 x1: colPos.x,
                 y1: colPos.y,
                 delay: this.settings.delay,
                 moveDelay: this.settings.moveDelay
-            }, "left", 'SEL_LARGEST_COL'))
+            }, "left", 'SEL_LARGEST_COL'))//*/
         }
 
         //box
@@ -332,12 +338,17 @@ module.exports = class InstructionWriter {
                     }, "left", 'SEL_BUCKET'))
 
                     let colPos = position.colors[largestColor]
-                    instructions.push(new DrawInstruction('DOT', {
+                    instructions = addColor(instructions, colPos, this.settings.delay + this.settings.colorDelay, this.settings.moveDelay, {
+                        clickToExpand: position.clickToExpand,
+                        clickToClose: position.clickToClose
+                    })
+                    /*instructions.push(new DrawInstruction('DOT', {
                         x1: colPos.x,
                         y1: colPos.y,
                         delay: this.settings.delay,
                         moveDelay: this.settings.moveDelay
                     }, "left", 'SEL_BUCKET_COL'))
+                    //*/
 
                     instructions.push(new DrawInstruction('DOT', {
                         x1: position.topleft.x + this.settings.distancing + offsets.x,
@@ -402,13 +413,17 @@ module.exports = class InstructionWriter {
                 for (let color of colorsInLine) {
                     let pos = position.colors[color]
 
-                    instructions.push(new DrawInstruction('DOT', {
+                    instructions = addColor(instructions, pos, this.settings.delay + this.settings.colorDelay, this.settings.moveDelay, {
+                        clickToExpand: position.clickToExpand,
+                        clickToClose: position.clickToClose
+                    })
+                    /*instructions.push(new DrawInstruction('DOT', {
                         x1: pos.x,
                         y1: pos.y,
                         delay: this.settings.delay + this.settings.colorDelay,
                         moveDelay: this.settings.moveDelay
                     },
-                        "left", "SET_COLOR"))
+                        "left", "SET_COLOR"))//*/
 
                     let currPos = -1
 
@@ -471,14 +486,19 @@ module.exports = class InstructionWriter {
 
 
 
+                instructions = addColor(instructions, pos, this.settings.delay + this.settings.colorDelay, this.settings.moveDelay, {
+                    clickToExpand: position.clickToExpand,
+                    clickToClose: position.clickToClose
+                })
 
+                /*
                 instructions.push(new DrawInstruction('DOT', {
                     x1: pos.x,
                     y1: pos.y,
                     delay: this.settings.delay + this.settings.colorDelay,
                     moveDelay: this.settings.moveDelay
                 },
-                    "left", "SET_COLOR"))
+                    "left", "SET_COLOR")) //*/
 
                 if (this.settings.dualColorMode) {
                     if (nextColor) instructions.push(new DrawInstruction('DOT', {
@@ -498,13 +518,18 @@ module.exports = class InstructionWriter {
 
                     let posSecondary = position.colors[nextColor ?? color]
 
-                    instructions.push(new DrawInstruction('DOT', {
+                    instructions = addColor(instructions, posSecondary, this.settings.delay + this.settings.colorDelay, this.settings.moveDelay, {
+                        clickToExpand: position.clickToExpand,
+                        clickToClose: position.clickToClose
+                    })
+                    // todo: investigate why there is no color delay added
+                    /*instructions.push(new DrawInstruction('DOT', {
                         x1: posSecondary.x,
                         y1: posSecondary.y,
                         delay: this.settings.delay,
                         moveDelay: this.settings.moveDelay
                     },
-                        "left", "SET_COLOR"))
+                        "left", "SET_COLOR"))//*/
 
                     if (this.settings.dualColorMode) instructions.push(new DrawInstruction('DOT', {
                         x1: position.primaryColor.x,
@@ -775,6 +800,62 @@ module.exports = class InstructionWriter {
 
         return instructions
     }
+}
+
+/**
+ * 
+ * @param {DrawInstruction[]} instructions 
+ * @param {{x: number, y: number}} position 
+ * @param {number} delay 
+ * @param {number} moveDelay 
+ * @param {{clickToExpand:{x:number, y:number},clickToClose:{x:number, y:number}}} clickToExpand 
+ * @returns 
+ */
+function addColor(instructions, position, delay, moveDelay, clickToExpand) {
+    // console.log("clickToExpand", clickToExpand)
+    let shouldExpand = clickToExpand &&
+        clickToExpand.clickToExpand &&
+        clickToExpand.clickToExpand.x > 0 &&
+        clickToExpand.clickToExpand.y > 0
+
+    let shouldClose = clickToExpand &&
+        clickToExpand.clickToClose &&
+        clickToExpand.clickToClose.x > 0 &&
+        clickToExpand.clickToClose.y > 0
+
+    // console.log("shouldExpand", shouldExpand)
+    // console.log("shouldClose", shouldClose)
+    if (shouldExpand) {
+        instructions.push(new DrawInstruction('DOT', {
+            x1: clickToExpand.clickToExpand.x,
+            y1: clickToExpand.clickToExpand.y,
+            delay: delay,
+            moveDelay: moveDelay
+        },
+            "left", "EXPAND_COLOR"))
+
+    }
+    instructions.push(new DrawInstruction('DOT', {
+        x1: position.x,
+        y1: position.y,
+        delay: delay,
+        moveDelay: moveDelay
+    },
+        "left", "SET_COLOR")
+    )
+
+
+    if (shouldExpand && shouldClose) {
+        instructions.push(new DrawInstruction('DOT', {
+            x1: clickToExpand.clickToClose.x,
+            y1: clickToExpand.clickToClose.y,
+            delay: delay,
+            moveDelay: moveDelay
+        },
+            "left", "CLOSE_COLOR"))
+    }
+
+    return instructions
 }
 
 /**

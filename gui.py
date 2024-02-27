@@ -211,7 +211,7 @@ def updateGui(window):
                             elif x and y:
                                 geomStr = "{}+{}".format(x, y)
 
-                            print("geomString {}".format(geomStr))
+                            # print("geomString {}".format(geomStr))
 
                             if geomStr != "":
                                 window.geometry(geomStr)

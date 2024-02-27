@@ -45,6 +45,18 @@ If you have questions suggestions or bugs, first read the FAQ. If not found plea
 * To run the main bot run `node index.js`.
 * To run the GUI run `python gui.py`.
 
+## Development 
+
+* Planned features:
+
+  + If you want to see the development progress or planned features, you can do so by visiting the [projects](https://github.com/users/1Euro7Cent/projects/1/views/1)
+  
+* Contributing:
+  
+    - If you want to contribute to the project, you can do so by opening a pull request. I will review it and merge it if it fits the project.
+    - If you want a feature to be implemented, you can open an issue and I will look into it.
+    
+
 ## Support me
 
 I invest my free time into this project. If you want to support me, you can do so by donating to me via paypal. These donations will keep the project alive, free and help me to continue working on it.

@@ -22,6 +22,11 @@ name = input("Please enter the name of the position preset: ")
 
 bucket = boolInput("Has the position set a bucket?")
 twoColors = boolInput("Can there be drawn with two colors? (left and right click)")
+clickToExpand = boolInput("Do you need to click to select (more) colors?")
+
+clickToClose = False
+if clickToExpand:
+    clickToClose = boolInput("Do you need to click to close the color picker?")
 
 
 positions = {
@@ -47,6 +52,14 @@ positions = {
             "y": -1
         },
         "pen": {
+            "x": -1,
+            "y": -1
+        },
+        "clickToExpand": {
+            "x": -1,
+            "y": -1
+        },
+        "clickToClose": {
             "x": -1,
             "y": -1
         },
@@ -118,6 +131,29 @@ def onClick(x, y, button, pressed):
         if status == "pen":
             positions[name]["pen"]["x"] = x
             positions[name]["pen"]["y"] = y
+
+            if clickToExpand:
+                status = "clickToExpand"
+            else:
+                status = "topleft"
+                
+            # status = "topleft"
+            return
+        
+        if status == "clickToExpand":
+            positions[name]["clickToExpand"]["x"] = x
+            positions[name]["clickToExpand"]["y"] = y
+            if clickToClose:
+                # print('click to close the color picker')
+                status = "clickToClose"
+            else:
+                status = "topleft"
+            return
+        
+        if status == "clickToClose":
+            positions[name]["clickToClose"]["x"] = x
+            positions[name]["clickToClose"]["y"] = y
+            # print('click to close the color picker')
             status = "topleft"
             return
 
@@ -130,6 +166,16 @@ def onClick(x, y, button, pressed):
         if status == "bottomright":
             positions[name]["bottomright"]["x"] = x
             positions[name]["bottomright"]["y"] = y
+            if clickToExpand:
+                # print('click to expand the color picker to be able to click on all colors')
+                status = "skipClick"
+            else:
+                status = "colors"
+
+            return
+
+        if status == "skipClick":
+            # print('click to expand the color picker to be able to click on all colors')
             status = "colors"
             return
 
@@ -142,6 +188,9 @@ def onClick(x, y, button, pressed):
                 "x": x,
                 "y": y
             }
+
+            if not clickToClose:
+                status = "skipClick"
             return
 
     else: # button released
@@ -160,6 +209,12 @@ def onClick(x, y, button, pressed):
                 print('now at the bottom right')
             case "colors":
                 print('and now over every printable color')
+            case "clickToExpand":
+                print('click to expand the color picker')
+            case "clickToClose":
+                print('click to close the color picker')
+            case "skipClick":
+                print('the next click is not counted. open the color picker and click on the next color')
 
 def main():
     with mouse.Listener(on_click=onClick) as l:

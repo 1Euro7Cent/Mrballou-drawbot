@@ -48,7 +48,7 @@ module.exports = class Positions extends BaseConfig {
 
     /**
      * @param {string} platform
-     * @returns {{topleft: {x: number, y: number}, bottomright: {x: number, y: number}, primaryColor: {x: number, y: number}, secondaryColor: {x: number, y: number}, width:number, height:number, bucket:{x: number, y:number}, pen:{x:number, y:number} , colors: {hex: {x: number, y: number}}}}
+     * @returns {{topleft: {x: number, y: number}, bottomright: {x: number, y: number}, primaryColor: {x: number, y: number}, secondaryColor: {x: number, y: number}, width:number, height:number, bucket:{x: number, y:number}, pen:{x:number, y:number}, clickToExpand:{x:number, y:number},clickToClose:{x:number, y:number} , colors: {hex: {x: number, y: number}}}}
      */
     getPlatform(platform) {
         console.log("platform", platform)
