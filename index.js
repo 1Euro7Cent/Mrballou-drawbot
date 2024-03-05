@@ -1,7 +1,17 @@
 const fs = require('fs')
-const express = require('express')
 const ws = require('ws')
-const axios = require('axios')
+// const axios = require('axios')
+// const axios = require(process.execPath + '/node_modules/axios')
+// let axios
+
+// import(process.cwd() + '/node_modules/axios').then((module) => {
+//     axios = module.default
+// }).catch((error) => {
+//     console.error("Failed to import axios:", error)
+// })
+
+// import "axios"
+const https = require('https')
 
 const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
@@ -56,7 +66,38 @@ if (!fs.existsSync(config.temp)) {
 if (config.checkForUpdates) {
     console.log('checking for updates')
     isCheckingForUpdates = true
-    axios.get('https://api.github.com/repos/1Euro7Cent/Mrballou-drawbot/releases')
+    let resData = ""
+    https.get('https://api.github.com/repos/1Euro7Cent/Mrballou-drawbot/releases', {
+        headers: {
+            'User-Agent': 'Mrballou-drawbot'
+        }
+
+    })
+        .on('response', (res) => {
+            res.on('data', (data) => {
+                resData += data
+            })
+            res.on('end', () => {
+                if (resData.startsWith("[") || resData.startsWith("{")) {
+                    res = {
+                        data: JSON.parse(resData)
+                    }
+                }
+                // console.log('got response: ' + resData)
+                let latest = res.data[0]
+                let latestStable = res.data.find((release) => !release.prerelease)
+                versions.latest = latest.tag_name
+                versions.latestStable = latestStable.tag_name
+                isCheckingForUpdates = false
+                isUpdateAvailable.latest = latest.tag_name != package.version
+                isUpdateAvailable.latestStable = latestStable.tag_name != package.version
+                console.log(`latest version: ${versions.latest} ${isUpdateAvailable.latest ? "update available" : "no update available"}`)
+                console.log(`latest stable version: ${versions.latestStable} ${isUpdateAvailable.latestStable ? "update available" : "no update available"}`)
+                tellGuiUpdateInfos()
+
+            })
+        })
+    /*
         .then((res) => {
             let latest = res.data[0]
             let latestStable = res.data.find((release) => !release.prerelease)
@@ -75,6 +116,7 @@ if (config.checkForUpdates) {
             updateCheckFailed = true
             tellGuiUpdateInfos()
         })
+        //*/
 
 }
 
