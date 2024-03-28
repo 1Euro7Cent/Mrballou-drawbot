@@ -224,6 +224,9 @@ def updateGui(window):
                             if "color" in element:
                                 fgColor = element["color"]
                                 textColor = getTextColor(fgColor)
+                                if not isValidHex(fgColor) or not isValidHex(textColor):
+                                    fgColor = "#000000"
+                                    textColor = "#ffffff"
                                 print("fgColor {} textColor {}".format(fgColor, textColor))
                                 ctk.CTkLabel(window, text=element["text"],fg_color=fgColor, text_color=textColor, padx= 3 ).grid(row=rows, column=columns)
                             else:
@@ -326,9 +329,25 @@ def mouseListener():
     with mouse.Listener(on_click=onClick) as l:
         l.join()
 
+def isValidHex(hex):
+    if len(hex) != 7:
+        return False
+
+    if hex[0] != "#":
+        return False
+
+    for c in hex[1:]:
+        if c not in "0123456789abcdef":
+            return False
+
+    return True
+
 
 # a function that decides weather the most readable color for a given background color is black or white
 def getTextColor(hex):
+    if not isValidHex(hex):
+        return "#000000"
+    print("Getting text color for {}".format(hex))
     hex = hex.replace("#", "")
     r = int(hex[0:2], 16)
     g = int(hex[2:4], 16)

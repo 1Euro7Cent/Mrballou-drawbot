@@ -560,27 +560,32 @@ module.exports = class InstructionWriter {
                             let xPixels = 0
                             let yPixels = 0
 
-                            let foundPixels = drawnPixels.find((p) => {
-                                let [xS, yS] = p.split(",")
-                                let [x1, x2] = xS.split("-")
-                                let [y1, y2] = yS.split("-")
+                            if (this.settings.lineSaving) {
+                                /*
+                                let foundPixels = drawnPixels.find((p) => {
+                                    let [xS, yS] = p.split(",")
+                                    let [x1, x2] = xS.split("-")
+                                    let [y1, y2] = yS.split("-")
 
 
 
-                                // check if x and y is in range
-                                return isInRange(x, x1, x2,) && isInRange(y, y1, y2)
+                                    // check if x and y is in range
+                                    return isInRange(x, x1, x2,) && isInRange(y, y1, y2)
 
-                            })
+                                })
 
-                            if (this.settings.lineSaving && typeof foundPixels != 'undefined') continue
-
+                                //*/
+                                let foundPixels = isPixelInRange(x, y, drawnPixels)
+                                if (foundPixels) continue
+                            }
 
                             for (let fx = x; looping; fx++) {
 
                                 let fnumb = recolored.getPixelColor(fx, fy)
                                 let frgba = Jimp.intToRGBA(fnumb)
                                 let fhex = rgbToHex(frgba)
-                                if (fhex == hex) {
+                                let foundPixels = isPixelInRange(fx, fy, drawnPixels)
+                                if (fhex == hex && !foundPixels) {
                                     xPixels++
                                 }
                                 else {
@@ -628,7 +633,8 @@ module.exports = class InstructionWriter {
                                     let fnumb = recolored.getPixelColor(fx, fy)
                                     let frgba = Jimp.intToRGBA(fnumb)
                                     let fhex = rgbToHex(frgba)
-                                    if (fhex == hex) {
+                                    let foundPixels = isPixelInRange(fx, fy, drawnPixels)
+                                    if (fhex == hex && !foundPixels) {
                                         yPixels++
                                     }
                                     else {
@@ -669,6 +675,7 @@ module.exports = class InstructionWriter {
                                         // draw y
                                         let pos1 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
                                         let pos2 = relativeToAbsolute(x, y, position, this.settings.distancing, 0, yPixels - 1)
+
                                         instructions.push(new DrawInstruction('DRAG', {
                                             x1: pos1.x + offsets.x,
                                             y1: pos1.y + offsets.y,
@@ -800,6 +807,23 @@ module.exports = class InstructionWriter {
 
         return instructions
     }
+}
+/**
+ * Checks if a given pixel is in the range of drawn pixels.
+ * @param {string | number} x - The x-coordinate of the pixel.
+ * @param {string | number} y - The y-coordinate of the pixel.
+ * @param {Array<string>} drawnPixels - The array of drawn pixels.
+ * @returns {boolean} - Returns true if the pixel is in range, false otherwise.
+ */
+function isPixelInRange(x, y, drawnPixels) {
+    return drawnPixels.find((p) => {
+        let [xS, yS] = p.split(",")
+        let [x1, x2] = xS.split("-")
+        let [y1, y2] = yS.split("-")
+
+        // check if x and y is in range
+        return isInRange(x, x1, x2,) && isInRange(y, y1, y2)
+    }) !== undefined
 }
 
 /**

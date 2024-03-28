@@ -260,5 +260,8 @@ module.exports = class DrawManager {
             // fs.writeFileSync(this.config.temp + this.config.abortingFile, "")
         }
         this.instructionWriter.isAborting = true
+        console.timeEnd("draw")
+        console.timeEnd("total")
+        console.timeEnd('write')
     }
 }
