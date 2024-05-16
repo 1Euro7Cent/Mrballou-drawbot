@@ -52,11 +52,11 @@ module.exports = class GuiBuilder {
         if (this.isUpdateAvailable || this.isCheckingForUpdates) {
             if (!this.checkForUpdates) {
                 versionText += " (update check disabled)"
-            }
-            if (this.updateCheckFailed) {
+            } else if (this.updateCheckFailed) {
                 versionText += " (update check failed)"
+
             }
-            if (this.isCheckingForUpdates) {
+            else if (this.isCheckingForUpdates) {
                 versionText += " (checking for updates)"
             }
             else {

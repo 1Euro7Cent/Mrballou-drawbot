@@ -91,6 +91,21 @@ for (let file of cleanupFiles) {
 
 }
 
+// auto change log generation
+//*
+try {
+    execSync("github_changelog_generator --help")
+
+    console.log("Generating changelog...")
+
+    console.log(execSync("github_changelog_generator -u 1Euro7Cent -p Mrballou-drawbot -o ./dist/CHANGELOG.md").toString())
+}
+catch (e) {
+    console.warn("github_changelog_generator not installed. skipping changelog generation")
+}
+
+//*/
+// return
 const commands = [
     "pkg index.temp.js -o ./dist/drawbot.exe",
     `pyinstaller --workpath "./temp" --onefile initializePositions.py`,

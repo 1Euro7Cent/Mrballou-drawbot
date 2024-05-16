@@ -78,6 +78,18 @@ if (config.checkForUpdates) {
                 resData += data
             })
             res.on('end', () => {
+                if (resData.length == 0 || res.statusCode != 200) {
+                    console.error('Error getting update information. Status code: ' + res.statusCode)
+                    // console.error(resData, res.statusCode)
+                    if (resData.startsWith('{')) {
+                        let err = new Error(JSON.parse(resData).message)
+                        console.error(err)
+                    }
+                    // isCheckingForUpdates = false
+                    updateCheckFailed = true
+                    tellGuiUpdateInfos()
+                    return
+                }
                 if (resData.startsWith("[") || resData.startsWith("{")) {
                     res = {
                         data: JSON.parse(resData)
