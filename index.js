@@ -121,7 +121,7 @@ if (config.checkForUpdates) {
 }
 
 //*
-let setting = new Setting(undefined, config.prettifyData)
+let setting = new Setting(undefined, config.prettifyData, undefined, true)
 setting.fromFile('./settings.json')
 setting.save('./settings.json')
 let settings = setting.data
@@ -130,7 +130,7 @@ let settings = setting.data
 // @ts-ignore
 settings = {}
 
-let position = new Positions(undefined, config.prettifyData)
+let position = new Positions(undefined, config.prettifyData, undefined, true)
 position.fromFile('./positions.json')
 position.save('./positions.json')
 
@@ -268,6 +268,21 @@ wss.on('connection', (ws) => {
                             // mainCs.serve()
                             break
 
+                        case 'transparentPicker':
+                            guiBuilder.buildTransparentPicker(setting).serve()
+                            break
+
+                        case 'requestTransparencyColor':
+                            let transColor = await guiBuilder.requestColor()
+                            if (!transColor) {
+                                guiBuilder.buildTransparentPicker(setting, "In your last operation something has gone wrong").serve()
+                                break
+                            }
+                            setting.data.transparentColor = transColor
+                            setting.save('./settings.json')
+                            guiBuilder.buildTransparentPicker(setting).serve()
+
+                            break
                         case "addIgnoreColor":
                             let color = await guiBuilder.requestColor()
                             console.log(`got color: ${color}`)

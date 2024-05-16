@@ -164,6 +164,35 @@ module.exports = class DrawManager {
 
         await resized.writeAsync(this.config.temp + 'resized.png')
 
+        // change alpha value to be replaced with transparentColor. it is in hex format
+        if (settings.data.transparentColor) {
+            let transColor = Jimp.cssColorToHex(settings.data.transparentColor)
+            resized.scan(0, 0, resized.bitmap.width, resized.bitmap.height, function (x, y, idx) {
+                let r = this.bitmap.data[idx + 0]
+                let g = this.bitmap.data[idx + 1]
+                let b = this.bitmap.data[idx + 2]
+                let a = this.bitmap.data[idx + 3]
+
+                // merge the color with transparentColor. eliminate the alpha value
+                // more transparent = more transparentColor. 0 alpha = 100% of transparentColor
+                // 100 alpha = a mix of already present color and transparentColor
+                if (a < 255) {
+                    let newColor = Jimp.intToRGBA(transColor)
+                    let newAlpha = 255 - a
+                    let newR = Math.round((r * a + newColor.r * newAlpha) / 255)
+                    let newG = Math.round((g * a + newColor.g * newAlpha) / 255)
+                    let newB = Math.round((b * a + newColor.b * newAlpha) / 255)
+                    this.bitmap.data[idx + 0] = newR
+                    this.bitmap.data[idx + 1] = newG
+                    this.bitmap.data[idx + 2] = newB
+                    this.bitmap.data[idx + 3] = 255
+
+                }
+            })
+            await resized.writeAsync(this.config.temp + 'transParentRemoved.png')
+
+        }
+
         // let resized = img // to test stuff
 
         // resized = await resized.rotate(42)
