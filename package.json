@@ -1,6 +1,6 @@
 {
   "name": "Drawbot",
-  "version": "3.17.0",
+  "version": "3.17.1",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
