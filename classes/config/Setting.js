@@ -2,8 +2,8 @@ const BaseConfig = require("./BaseConfig")
 
 
 module.exports = class Setting extends BaseConfig {
-    constructor(name = 'setting', prettify = false) {
-        super(name, prettify)
+    constructor(name = 'setting', prettify = false, allowParseToNumber = true, ignoreArray = false) {
+        super(name, prettify, allowParseToNumber, ignoreArray)
 
         this.data = {
             platform: "paint",
@@ -18,6 +18,7 @@ module.exports = class Setting extends BaseConfig {
             ignoreColors: {
 
             },
+            transparentColor: "#ffffff",
             sortColAlg: "size 0-9",
             resizeImgAlg: "fit",
             positionImgAlg: "center",

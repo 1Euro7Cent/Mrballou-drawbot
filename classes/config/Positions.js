@@ -1,8 +1,8 @@
 const BaseConfig = require("./BaseConfig")
 
 module.exports = class Positions extends BaseConfig {
-    constructor(name = 'positions', prettify = false) {
-        super(name, prettify)
+    constructor(name = 'positions', prettify = false, allowParseToNumber = true, ignoreArray = false) {
+        super(name, prettify, allowParseToNumber, ignoreArray)
 
         /*
         this.data = {

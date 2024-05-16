@@ -144,7 +144,7 @@ module.exports = class GuiBuilder {
         * @type {BaseElement[][]}
         */
         let elements = [
-            [new ButtonElement("abortButton", "Back")],
+            [new ButtonElement("abortButton", "Back"), new ButtonElement("transparentPicker", "Select transparent color")],
             // [new TextElement("Note: when bucket is enabled, the bucket will override the ignore colors during the draw")],
             // [new TextElement("Note: when bucket is enabled, the bucket")],
             // [new TextElement("will override the ignore colors during the draw")],
@@ -170,6 +170,19 @@ module.exports = class GuiBuilder {
 
 
         return this.#insertBase(elements, "updateUI")
+    }
+
+    buildTransparentPicker(settings, text = "") {
+
+        let elements = [
+            [new ButtonElement("ignoreColorsButton", "Back")],
+            [new TextElement("Select a color To be used instead of transparency")],
+            text.length > 0 ? [new TextElement(text)] : [],
+            [new ButtonElement("requestTransparencyColor", "Select color")],
+            [new TextElement("Selected color: "), new TextElement(settings.data.transparentColor, settings.data.transparentColor)],
+        ]
+        return this.#insertBase(elements, "updateUI")
+
     }
 
     /**

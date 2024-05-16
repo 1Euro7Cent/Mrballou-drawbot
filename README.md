@@ -49,7 +49,7 @@ If you have questions suggestions or bugs, first read the FAQ. If not found plea
 
 * Planned features:
 
-  + If you want to see the development progress or planned features, you can do so by visiting the [projects](https://github.com/users/1Euro7Cent/projects/1/views/1)
+  + If you want to see the development progress or planned features, you can do so by visiting the [projects](https://github.com/users/1Euro7Cent/projects/1/views/1) page
   
 * Contributing:
   
