@@ -30,7 +30,8 @@ module.exports = class Config extends BaseConfig {
                     height: -1,
                     x: -1,
                     y: -1
-                }
+                },
+                sendDynInstructionLen: false, // if true it will send instruction data length to gui every 100 instructions. otherwise every new color
 
             },
             communication: {

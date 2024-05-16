@@ -1,10 +1,10 @@
 {
   "name": "Drawbot",
-  "version": "3.17.1",
+  "version": "3.18.0",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon",
+    "dev": "start cmd /C python gui.py && nodemon",
     "build": "node build.js"
   },
   "repository": {
@@ -39,7 +39,7 @@
   },
   "nodemonConfig": {
     "events": {
-      "start": "start cmd /C python gui.py"
+      "start_": "start cmd /C python gui.py"
     },
     "ignore": [
       "/temp/*",

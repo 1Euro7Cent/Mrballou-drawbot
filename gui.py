@@ -403,8 +403,11 @@ if __name__ == "__main__":
             sys.exit()
         
         if not communicationThread.is_alive():
-            print("websocket thread died... exiting")
-            sys.exit()
+            print("websocket thread died... restarting session...")
+            communicationThread = threading.Thread(target=communication, args=(config,))
+            communicationThread.daemon = True
+            communicationThread.start()
+            # sys.exit()
 
         if not keyboardThread.is_alive():
             print("keyboard thread died... exiting")

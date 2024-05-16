@@ -476,7 +476,9 @@ module.exports = class InstructionWriter {
                 process.stdout.write('    ')
                 let logText = `writing color ${color} ${colorCounter}/${colorCount} ${this.settings.dualColorMode && nextColor ? 'and ' + nextColor : ''}`
                 console.timeLog("write", logText)
-                this.logger("Calculating...\n" + logText)
+                // this.logger("Calculating...\n" + logText)
+                this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
                 if (this.isAborting) return []
                 await sleep(5)
                 // console.log("next color", nextColor)
@@ -544,6 +546,7 @@ module.exports = class InstructionWriter {
 
 
                 for (let y = 0; y < recolored.bitmap.height; y++) {
+                    if (this.config.gui.sendDynInstructionLen) await sleep(1) // sleep to not block the event loop
                     if (this.isAborting) return []
                     for (let x = 0; x < recolored.bitmap.width; x++) {
                         let numb = recolored.getPixelColor(x, y)
@@ -608,6 +611,8 @@ module.exports = class InstructionWriter {
                                             delay: this.settings.delay,
                                             moveDelay: this.settings.moveDelay
                                         }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+                                        if (this.config.gui.sendDynInstructionLen && instructions.length % 100 == 0) this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
                                     }
                                     else {
                                         let pos = relativeToAbsolute(x, y, position, this.settings.distancing, 0, 0)
@@ -617,6 +622,8 @@ module.exports = class InstructionWriter {
                                             delay: this.settings.delay,
                                             moveDelay: this.settings.moveDelay
                                         }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
+                                        if (this.config.gui.sendDynInstructionLen && instructions.length % 100 == 0) this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
 
                                     }
                                     x = fx
@@ -660,6 +667,8 @@ module.exports = class InstructionWriter {
                                             delay: this.settings.delay,
                                             moveDelay: this.settings.moveDelay
                                         }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+                                        if (this.config.gui.sendDynInstructionLen && instructions.length % 100 == 0) this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
 
                                         let pixString = `${x}-${x + (xPixels - 1)},${y}-${y}`
                                         this.debug?.drawnPixels.push(pixString)
@@ -684,6 +693,8 @@ module.exports = class InstructionWriter {
                                             delay: this.settings.delay,
                                             moveDelay: this.settings.moveDelay
                                         }, hex == nextColor ? "right" : "left", "DRAW_LINE"))
+                                        if (this.config.gui.sendDynInstructionLen && instructions.length % 100 == 0) this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
 
                                         // addLTodrawn(instructions, drawnPixels)
                                         let pixString = `${x}-${x},${y}-${y + (yPixels - 1)}`
@@ -701,6 +712,8 @@ module.exports = class InstructionWriter {
                                         delay: this.settings.delay,
                                         moveDelay: this.settings.moveDelay
                                     }, hex == nextColor ? "right" : "left", "DRAW_PIXEL"))
+                                    if (this.config.gui.sendDynInstructionLen && instructions.length % 100 == 0) this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
 
                                     this.debug?.customPixels.push(`${x},${y}`)
                                 }
@@ -718,6 +731,8 @@ module.exports = class InstructionWriter {
                             }, hex == nextColor ? "right" : "left", "DRAW_PIXEL")
                             instructions.push(instruction)
                             this.debug?.customPixels.push(`${x},${y}`)
+                            if (this.config.gui.sendDynInstructionLen && instructions.length % 100 == 0) this.logger("Calculating...\n" + logText + `(${instructions.length})`)
+
                         }
                     }
                 }
