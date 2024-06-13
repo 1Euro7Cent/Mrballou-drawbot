@@ -6,6 +6,7 @@
 <img alt="GitHub watchers" src="https://img.shields.io/github/watchers/1Euro7Cent/Mrballou-drawbot">
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/1Euro7Cent/Mrballou-drawbot">
 <img alt="Lines of code" src="https://tokei.rs/b1/github/1Euro7Cent/Mrballou-drawbot?category=code">
+<a href="https://wakatime.com/badge/user/7ab05669-80d6-4bdf-8495-86f33d353ee9/project/f4d024d2-fccc-429b-a83d-e91216a75b59"><img src="https://wakatime.com/badge/user/7ab05669-80d6-4bdf-8495-86f33d353ee9/project/f4d024d2-fccc-429b-a83d-e91216a75b59.svg" alt="wakatime"></a>
 
 </div>
 

@@ -1,6 +1,6 @@
 {
   "name": "Drawbot",
-  "version": "3.18.0",
+  "version": "3.19.0",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
@@ -31,10 +31,10 @@
     "multidither": "^1.0.5",
     "nearest-rgba": "^1.0.0",
     "robotjs": "^0.6.0",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
-    "jszip": "^3.10.1",
     "pkg": "^5.8.1"
   },
   "nodemonConfig": {

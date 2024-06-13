@@ -52,6 +52,10 @@ module.exports = class Positions extends BaseConfig {
      */
     getPlatform(platform) {
         console.log("platform", platform)
+        if (!this.data[platform]) {
+            console.error(`Platform ${platform} not found`)
+            return
+        }
         let width = this.data[platform].bottomright.x - this.data[platform].topleft.x
         let height = this.data[platform].bottomright.y - this.data[platform].topleft.y
         this.data[platform].width = width
