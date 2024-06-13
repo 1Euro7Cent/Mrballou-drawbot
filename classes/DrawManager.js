@@ -115,6 +115,13 @@ module.exports = class DrawManager {
         this.state = "resizing"
 
         let position = positions.getPlatform(this.settings.platform)
+        if (!position) {
+            console.error("Platform not found")
+            this.state = "idle"
+            console.timeEnd("total")
+            this.guiBuilder.buildCalc("Platform not found").serve()
+            return
+        }
         if (settings.data.positionOverride.enabled) {
             position.topleft = {
                 x: settings.data.positionOverride.x1,

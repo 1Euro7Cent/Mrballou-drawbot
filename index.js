@@ -12,13 +12,16 @@ const ws = require('ws')
 
 // import "axios"
 const https = require('https')
+const jsZip = require('jszip')
 
 const Config = require('./classes/config/Config')
 const DrawManager = require('./classes/DrawManager')
 const Setting = require('./classes/config/Setting')
 const Positions = require('./classes/config/Positions')
 const GuiBuilder = require('./classes/gui/GuiBuilder')
+const starBoxGen = require('./lib/starBoxGen')
 
+console.log(starBoxGen("This is the server\nYou can start the gui by opening the gui.exe"))
 
 let package = {} // DON'T CHANGE THIS LINE OTHERWISE THE BUILD WILL NOT SUCCEED
 
@@ -50,6 +53,16 @@ let config = config_.data
 if (config.debug.enabled) console.warn('Debug mode enabled')
 
 // console.log(config)
+
+
+// crash handling
+process.on('uncaughtException', (err, origin) => {
+    console.error('uncaughtException', err, origin)
+    if (tellGui) {
+        tellGui.buildMessage(`An error has occurred that crashed the server: ${err.message}`).serve()
+    }
+    process.exit(1)
+})
 
 if (fs.existsSync(config.temp + config.abortingFile)) {
     fs.unlinkSync(config.temp + config.abortingFile)
@@ -228,6 +241,40 @@ wss.on('connection', (ws) => {
                 case "buttonPressed":
                     console.log(`button "${data.button}" pressed`)
                     switch (data.button) {
+                        case 'diagnosticButton':
+                            guiBuilder.buildMessage('Building diagnostic data. this can take a while').serve()
+                            let zip = new jsZip()
+
+                            let files = zip.folder('')
+                            if (files == null) {
+                                guiBuilder.buildMessage('Error creating zip file').serve()
+                                break
+                            }
+                            // config files
+                            files.file('config.json', fs.readFileSync('./config.json'))
+                            files.file('settings.json', fs.readFileSync('./settings.json'))
+                            files.file('positions.json', fs.readFileSync('./positions.json'))
+                            files.file('saves.json', fs.readFileSync('./saves.json'))
+
+
+                            zip.generateAsync({
+                                type: 'nodebuffer',
+                                compression: "DEFLATE",
+                                compressionOptions: {
+                                    level: 9
+                                }
+                            }).then((content) => {
+                                fs.writeFileSync('./diagnostic.zip', content)
+                                guiBuilder.buildMessage('Diagnostic data created. You can find it under ./diagnostics.zip').serve()
+
+                                let url = `file://${process.cwd()}/diagnostic.zip`
+                                // var start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open')
+                                var start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open')
+                                require('child_process').exec(start + ' ' + url)
+                            })
+
+
+                            break
                         case 'drawButton':
                             if (fs.existsSync(config.temp + config.abortingFile)) {
                                 fs.unlinkSync(config.temp + config.abortingFile)

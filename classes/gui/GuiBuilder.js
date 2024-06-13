@@ -288,7 +288,7 @@ module.exports = class GuiBuilder {
             [new ButtonElement("saveConfig", "Save config"), new EntryElement("saveConfigName", "")],
             [new ButtonElement("loadConfig", "Load config"), new DropdownElement("loadConfigName", saveNames, "")],
             [new TextElement("Image URL"), new EntryElement("img", settings.data.img)],
-            [new BaseElement(), new ButtonElement("drawButton", "Draw")],
+            [new ButtonElement("diagnosticButton", "Make Diagnostics"), new ButtonElement("drawButton", "Draw")],
         ]
 
         return this.#insertBase(elements, "updateUI")

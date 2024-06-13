@@ -11,6 +11,15 @@ import time
 import websocket as ws
 from CTkColorPicker import *
 
+print(
+    """
+*******************************************************
+*                   This is the gui                   *
+* You can start the server by opening the drawbot.exe *
+*******************************************************
+    """
+)
+
 dataQueue = queue.Queue()
 valueQueue = queue.Queue()
 
