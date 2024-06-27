@@ -92,7 +92,7 @@ for (let file of cleanupFiles) {
 }
 
 // auto change log generation
-//*
+/*
 try {
     execSync("github_changelog_generator --help")
 

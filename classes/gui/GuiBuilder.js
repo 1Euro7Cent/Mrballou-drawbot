@@ -321,12 +321,12 @@ module.exports = class GuiBuilder {
     }
 
 
-    buildMessage(message) {
+    buildMessage(message, noAbort = false) {
         /**
          * @type {BaseElement[][]}
          */
         let elements = [
-            [new ButtonElement("abortButton", "Back")],
+            [(!noAbort) ? new ButtonElement("abortButton", "Back") : new TextElement("Restart required")],
             [new TextElement(message)]
         ]
 

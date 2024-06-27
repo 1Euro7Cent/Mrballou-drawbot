@@ -1,5 +1,5 @@
 const fs = require('fs')
-
+throw new Error('This file is no longer needed')
 module.exports = class Config {
     /**
      * 
@@ -74,7 +74,7 @@ module.exports = class Config {
     }
     /**
      * this overwrites the internal config object with the given config object
-     * @param {{any: any}} json
+     * @param {{any: any} | string} json
      */
     fromJson(json) {
         let newConfig = {}

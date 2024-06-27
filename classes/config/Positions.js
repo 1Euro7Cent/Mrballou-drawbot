@@ -1,8 +1,10 @@
-const BaseConfig = require("./BaseConfig")
+// const BaseConfig = require("./BaseConfig")
+const BaseConfig = require('mrconfig.js')
+
 
 module.exports = class Positions extends BaseConfig {
     constructor(name = 'positions', prettify = false, allowParseToNumber = true, ignoreArray = false) {
-        super(name, prettify, allowParseToNumber, ignoreArray)
+        super(name, prettify, allowParseToNumber, true, ignoreArray)
 
         /*
         this.data = {

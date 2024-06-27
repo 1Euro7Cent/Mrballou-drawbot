@@ -45,7 +45,14 @@ catch (e) {
 }
 
 let config_ = new Config(undefined, true)
-config_.fromFile('./config.json')
+try {
+    config_.fromFile('./config.json')
+} catch (e) {
+    console.error("Error loading config:", e)
+    console.log(`\n\ncreating diagnostic data`)
+    makeDiagnostics(undefined, true, true)
+    // throw new Error("Error loading config")
+}
 config_.save('./config.json')
 
 let config = config_.data
@@ -147,7 +154,15 @@ if (config.checkForUpdates) {
 
 //*
 let setting = new Setting(undefined, config.prettifyData, undefined, true)
-setting.fromFile('./settings.json')
+try {
+    setting.fromFile('./settings.json')
+} catch (e) {
+    console.error("Error loading settings:", e)
+    console.log(`\n\ncreating diagnostic data`)
+    makeDiagnostics(undefined, true, true)
+    // throw new Error("Error loading settings")
+}
+
 setting.save('./settings.json')
 let settings = setting.data
 //*/
@@ -156,7 +171,20 @@ let settings = setting.data
 settings = {}
 
 let position = new Positions(undefined, config.prettifyData, undefined, true)
-position.fromFile('./positions.json')
+try {
+    position.fromFile('./positions.json')
+} catch (e) {
+    console.error("Error loading positions:", e)
+    console.log(`\n\ncreating diagnostic data`)
+    makeDiagnostics(undefined, true, true)
+    // throw new Error("Error loading positions")
+}
+let noPos = false
+let posStr = JSON.stringify(position.data)
+if (posStr == "{}" || posStr == "null") {
+    console.log(starBoxGen('No positions found. Create positions\nby running the initializePositions.py/exe'))
+    noPos = true
+}
 position.save('./positions.json')
 
 if (!fs.existsSync('./saves.json')) {
@@ -170,6 +198,48 @@ console.log(`starting websocket server on port ${config.port}`)
 
 const wss = new ws.Server({ port: config.port })
 let connected = false
+
+function makeDiagnostics(guiBuilder, noGui = false, endAfter = false) {
+    if (!noGui) guiBuilder.buildMessage('Building diagnostic data. this can take a while').serve()
+    let zip = new jsZip()
+
+    let files = zip.folder('')
+    if (files == null) {
+        if (!noGui) guiBuilder.buildMessage('Error creating zip file. Check permissions and disk space').serve()
+        console.error('Error creating zip file. Check permissions and disk space')
+        if (endAfter) {
+            console.log('exiting due to diagnostic data creation')
+            process.exit(1)
+        }
+        return
+    }
+    // config files
+    files.file('config.json', fs.readFileSync('./config.json'))
+    files.file('settings.json', fs.readFileSync('./settings.json'))
+    files.file('positions.json', fs.readFileSync('./positions.json'))
+    files.file('saves.json', fs.readFileSync('./saves.json'))
+
+
+    zip.generateAsync({
+        type: 'nodebuffer',
+        compression: "DEFLATE",
+        compressionOptions: {
+            level: 9
+        }
+    }).then((content) => {
+        fs.writeFileSync('./diagnostic.zip', content)
+        if (!noGui) guiBuilder.buildMessage('Diagnostic data created. You can find it under ./diagnostics.zip').serve()
+
+        let url = `file://${process.cwd()}/diagnostic.zip`
+        // var start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open')
+        var start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open')
+        require('child_process').execSync(start + ' ' + url)
+        if (endAfter) {
+            console.log('exiting due to diagnostic data creation')
+            process.exit(1)
+        }
+    })
+}
 
 wss.on('connection', (ws) => {
     // console.log(ws)
@@ -187,8 +257,11 @@ wss.on('connection', (ws) => {
     tellGui = guiBuilder
     connected = true
     let drawManager = new DrawManager(config_, guiBuilder)
+    if (noPos) {
+        guiBuilder.buildMessage("No positions found. Create positions by running the initializePositions.py/exe", true).serve()
+    }
 
-    guiBuilder.buildSelection(setting, position).serve()
+    if (!noPos) guiBuilder.buildSelection(setting, position).serve()
     // console.log(guiBuilder.toStr(selectGui))
 
     let messageCount = config.communication.keepAlive.unreceivedMax
@@ -242,37 +315,7 @@ wss.on('connection', (ws) => {
                     console.log(`button "${data.button}" pressed`)
                     switch (data.button) {
                         case 'diagnosticButton':
-                            guiBuilder.buildMessage('Building diagnostic data. this can take a while').serve()
-                            let zip = new jsZip()
-
-                            let files = zip.folder('')
-                            if (files == null) {
-                                guiBuilder.buildMessage('Error creating zip file').serve()
-                                break
-                            }
-                            // config files
-                            files.file('config.json', fs.readFileSync('./config.json'))
-                            files.file('settings.json', fs.readFileSync('./settings.json'))
-                            files.file('positions.json', fs.readFileSync('./positions.json'))
-                            files.file('saves.json', fs.readFileSync('./saves.json'))
-
-
-                            zip.generateAsync({
-                                type: 'nodebuffer',
-                                compression: "DEFLATE",
-                                compressionOptions: {
-                                    level: 9
-                                }
-                            }).then((content) => {
-                                fs.writeFileSync('./diagnostic.zip', content)
-                                guiBuilder.buildMessage('Diagnostic data created. You can find it under ./diagnostics.zip').serve()
-
-                                let url = `file://${process.cwd()}/diagnostic.zip`
-                                // var start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open')
-                                var start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open')
-                                require('child_process').exec(start + ' ' + url)
-                            })
-
+                            makeDiagnostics(guiBuilder)
 
                             break
                         case 'drawButton':

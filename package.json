@@ -1,6 +1,6 @@
 {
   "name": "Drawbot",
-  "version": "3.19.0",
+  "version": "3.20.0",
   "description": "This moves the mouse to draw stuff",
   "main": "index.js",
   "scripts": {
@@ -28,11 +28,12 @@
   "dependencies": {
     "imagemaxsize": "^0.0.2",
     "jimp": "^0.22.12",
+    "jszip": "^3.10.1",
+    "mrconfig.js": "^1.1.1",
     "multidither": "^1.0.5",
     "nearest-rgba": "^1.0.0",
     "robotjs": "^0.6.0",
-    "ws": "^8.16.0",
-    "jszip": "^3.10.1"
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "pkg": "^5.8.1"

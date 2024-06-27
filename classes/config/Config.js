@@ -1,8 +1,9 @@
-const BaseConfig = require("./BaseConfig")
+// const BaseConfig = require("./BaseConfig")
+const BaseConfig = require('mrconfig.js')
 
 module.exports = class Config extends BaseConfig {
     constructor(name = 'config', prettify = false, allowParseToNumber = true, ignoreArray = false) {
-        super(name, prettify, allowParseToNumber, ignoreArray)
+        super(name, prettify, allowParseToNumber, true, ignoreArray)
 
         this.data = {
             checkForUpdates: true,

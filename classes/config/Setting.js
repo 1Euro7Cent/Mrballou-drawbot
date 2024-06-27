@@ -1,9 +1,11 @@
-const BaseConfig = require("./BaseConfig")
+// const BaseConfig = require("./BaseConfig")
+const BaseConfig = require('mrconfig.js')
+
 
 
 module.exports = class Setting extends BaseConfig {
     constructor(name = 'setting', prettify = false, allowParseToNumber = true, ignoreArray = false) {
-        super(name, prettify, allowParseToNumber, ignoreArray)
+        super(name, prettify, allowParseToNumber, true, ignoreArray)
 
         this.data = {
             platform: "paint",
@@ -36,6 +38,8 @@ module.exports = class Setting extends BaseConfig {
             dualColorMode: false,
             onePassMode: false,
             box: false,
+            saveConfigName: "",
+            loadConfigName: "",
         }
 
     }

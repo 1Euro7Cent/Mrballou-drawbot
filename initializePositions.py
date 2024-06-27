@@ -189,7 +189,7 @@ def onClick(x, y, button, pressed):
                 "y": y
             }
 
-            if not clickToClose:
+            if not clickToClose and clickToExpand:
                 status = "skipClick"
             return
 

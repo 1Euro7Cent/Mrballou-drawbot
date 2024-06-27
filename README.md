@@ -26,7 +26,7 @@ If you have questions suggestions or bugs, first read the FAQ. If not found plea
 
 ## Installation
 
-* Go to releases.
+* Go to [releases](https://github.com/1Euro7Cent/Mrballou-drawbot/releases).
 * Download the latest release.
 * Extract the zip file into a folder.
 * Run `initializePositions.exe` and follow the instructions (abort/save with right click).
