@@ -132,10 +132,10 @@ def onClick(x, y, button, pressed):
             positions[name]["pen"]["x"] = x
             positions[name]["pen"]["y"] = y
 
-            if clickToExpand:
-                status = "clickToExpand"
-            else:
-                status = "topleft"
+            # if clickToExpand:
+            #     status = "clickToExpand"
+            # else:
+            status = "topleft"
                 
             # status = "topleft"
             return
@@ -147,14 +147,15 @@ def onClick(x, y, button, pressed):
                 # print('click to close the color picker')
                 status = "clickToClose"
             else:
-                status = "topleft"
+                status = "colors"
             return
         
         if status == "clickToClose":
             positions[name]["clickToClose"]["x"] = x
             positions[name]["clickToClose"]["y"] = y
             # print('click to close the color picker')
-            status = "topleft"
+            # status = "topleft" 
+            status = "skipClick" 
             return
 
         if status == "topleft":
@@ -168,7 +169,9 @@ def onClick(x, y, button, pressed):
             positions[name]["bottomright"]["y"] = y
             if clickToExpand:
                 # print('click to expand the color picker to be able to click on all colors')
-                status = "skipClick"
+                # status = "skipClick"
+                status = "clickToExpand"
+
             else:
                 status = "colors"
 
