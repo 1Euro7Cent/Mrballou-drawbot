@@ -122,6 +122,16 @@ module.exports = class DrawManager {
             this.guiBuilder.buildCalc("Platform not found").serve()
             return
         }
+        // check if colors have any objects
+
+        if (Object.keys(position.colors).length == 0) {
+            console.error("No colors found")
+            this.state = "idle"
+            console.timeEnd("total")
+            this.guiBuilder.buildCalc("No colors found. Try selecting a diffrent position or make a new one").serve()
+            return
+        }
+
         if (settings.data.positionOverride.enabled) {
             position.topleft = {
                 x: settings.data.positionOverride.x1,
