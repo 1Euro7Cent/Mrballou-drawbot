@@ -152,6 +152,9 @@ if (config.checkForUpdates) {
 
 }
 
+if (!fs.existsSync('./settings.json')) {
+    fs.writeFileSync('./settings.json', "{}")
+}
 //*
 let setting = new Setting(undefined, config.prettifyData, undefined, true)
 try {
@@ -187,11 +190,28 @@ if (posStr == "{}" || posStr == "null") {
 }
 position.save('./positions.json')
 
+
 if (!fs.existsSync('./saves.json')) {
     fs.writeFileSync('./saves.json', "{}")
 }
+/*
 
 let saves = require('./saves.json')
+
+
+//*/
+
+let savesConf = new Setting(undefined, config.prettifyData, undefined, true)
+try {
+    savesConf.fromFile('./saves.json')
+}
+catch (e) {
+    console.error("Error loading saves:", e)
+    console.log(`\n\ncreating diagnostic data`)
+    makeDiagnostics(undefined, true, true)
+    // throw new Error("Error loading saves")
+}
+let saves = savesConf.data
 
 
 console.log(`starting websocket server on port ${config.port}`)

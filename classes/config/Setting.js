@@ -8,7 +8,7 @@ module.exports = class Setting extends BaseConfig {
         super(name, prettify, allowParseToNumber, true, ignoreArray)
 
         this.data = {
-            platform: "paint",
+            platform: "dummy",
             img: './img/test.png',
             dither: false,
             fast: true,
