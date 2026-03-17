@@ -1,5 +1,6 @@
 from pynput import keyboard, mouse
-# import tkinter as tk
+import tkinter as tk
+import tkinter.font as tkfont
 import customtkinter as ctk
 import json
 import threading
@@ -27,6 +28,23 @@ projectData = {}
 positionData = {}
 settingsData = {}
 guiData = {}
+
+
+def font_exists(name):
+    # Use Tk's registered font families to avoid external dependencies.
+    temp_root = None
+    try:
+        root = tk._default_root
+        if root is None:
+            temp_root = tk.Tk()
+            temp_root.withdraw()
+            root = temp_root
+
+        available_fonts = tkfont.families(root)
+        return name in available_fonts
+    finally:
+        if temp_root is not None:
+            temp_root.destroy()
 
 
 
@@ -269,7 +287,12 @@ def updateGui(window):
                             ctk.CTkOptionMenu(window, variable=dropdownVal, values=element["values"]).grid(row=rows, column=columns)
 
         if wantsFontChanged:
-            fontName, fontSize = fontChangeTo.split(" ")
+            fontName, fontSize = fontChangeTo.split("_")
+            # print("Changing font to {} with size {}".format(fontName, fontSize))
+            fontExists = font_exists(fontName)
+            if not fontExists:
+                print("Font {} does not exist. Reverting to default font.".format(fontName))
+                fontName = tkfont.nametofont("TkDefaultFont").actual("family")
             fontSize = int(fontSize)
             for widget in window.winfo_children():
                 widget.configure(font=(fontName, fontSize))

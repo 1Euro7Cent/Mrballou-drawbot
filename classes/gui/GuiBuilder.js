@@ -86,7 +86,7 @@ module.exports = class GuiBuilder {
         let elements = [[
             // new TextElement(`Version: ${this.metadata.version}`), new TextElement(versionText),
             // new GeometryElement(350, 550, -400, 300),
-            new FontElement(`${this.config.gui.font} ${this.config.gui.fontSize}`),
+            new FontElement(this.config.gui.font, this.config.gui.fontSize),
             new TitleElement(this.metadata.name)]]
         if (type == "calc") {
             elements.unshift([new TextElement(`Version: ${this.metadata.version}` + versionText)])

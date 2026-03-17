@@ -4,6 +4,15 @@ const fs = require('fs')
 
 const package = require('./package.json')
 
+let moveConfigFiles = true
+let configFilesToMove = [
+    "config.json",
+    "positions.json",
+    "saves.json",
+    "settings.json"
+]
+let moveConfigsTo = "./../drawbot-configsBackup/"
+
 console.time('build')
 // make sure we have pkg installed
 
@@ -105,6 +114,42 @@ catch (e) {
 }
 
 //*/
+
+// back up config files, so we can move them back after the build
+
+let backedUpConfigFiles = {}
+if (moveConfigFiles) {
+    if (!fs.existsSync(moveConfigsTo)) fs.mkdirSync(moveConfigsTo)
+    for (let file of configFilesToMove) {
+        if (fs.existsSync(file)) {
+            console.log(`Backing up ${file} to ${moveConfigsTo}`)
+            try {
+                fs.copyFileSync(file, moveConfigsTo + file)
+                backedUpConfigFiles[file] = true
+            } catch (e) {
+                console.error(`Error occurred while copying ${file}: ${e.message}`)
+                console.log('Aborting build to prevent data loss.')
+                process.exit(1)
+            }
+            // validate the copied file
+            if (!fs.existsSync(moveConfigsTo + file)) {
+                let srcData = fs.existsSync(file) ? fs.readFileSync(file) : null
+                let destData = fs.existsSync(moveConfigsTo + file) ? fs.readFileSync(moveConfigsTo + file) : null
+                if (srcData && destData && srcData.equals(destData)) {
+                    console.log(`Validation passed for ${file}`)
+                } else {
+                    console.error(`Validation failed for ${file}`)
+                    console.log('Aborting build to prevent data loss.')
+                    process.exit(1)
+                }
+            }
+            fs.rmSync(file) // comment out for testing
+
+        }
+    }
+}
+
+
 // return
 const commands = [
     "pkg index.temp.js -o ./dist/drawbot.exe",
@@ -149,7 +194,37 @@ fs.rmSync('index.temp.js')
 
 //*/
 
-console.log('Build complete. files are found in dist/ \nPacking to zip file...')
+console.log('Build complete. files are found in dist/ \nRestoring backup...')
+
+// move back config files
+if (moveConfigFiles) {
+    for (let file of configFilesToMove) {
+        if (backedUpConfigFiles[file]) {
+            console.log(`Restoring ${file} from backup`)
+            try {
+                fs.copyFileSync(moveConfigsTo + file, file)
+                // validate the copied file
+                let srcData = fs.existsSync(moveConfigsTo + file) ? fs.readFileSync(moveConfigsTo + file) : null
+                let destData = fs.existsSync(file) ? fs.readFileSync(file) : null
+                if (srcData && destData && srcData.equals(destData)) {
+                    console.log(`Validation passed for ${file}`)
+                    fs.rmSync(moveConfigsTo + file)
+                } else {
+                    console.error(`Validation failed for ${file}. Please restore the file manually from the backup folder.`)
+                }
+            }
+
+            catch (e) {
+                console.error(`Error occurred while restoring ${file}: ${e.message}`)
+                console.log('Please restore the file manually from the backup folder.')
+            }
+        }
+    }
+
+    console.log('Backup restore complete.')
+}
+
+console.log('Generating start batch file...')
 
 let startBatch = `@echo off
 start cmd /k "drawbot.exe"
@@ -160,6 +235,7 @@ start cmd /k "gui.exe"
 
 fs.writeFileSync('dist/start.bat', startBatch)
 
+console.log('Packing files to zip...')
 let zip = new jsZip()
 
 let files = zip.folder('')
