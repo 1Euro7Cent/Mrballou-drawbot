@@ -27,6 +27,8 @@ module.exports = class DrawManager {
         this.isAborting = false
 
         this.broadcastQueue = []
+        this.lastHeader = ""
+        this.lastMessage = ""
 
 
         setInterval(() => {
@@ -37,8 +39,20 @@ module.exports = class DrawManager {
             }
         }, 100)
         this.lastLog = Date.now()
-        this.instructionWriter.logger = (message) => {
-            this.#broadcastToGuiWD(message)
+        this.instructionWriter.logger = (message, header = "", reset = false) => {
+            if (header != "" && header != this.lastHeader) {
+                this.lastHeader = header
+                // console.log(header)
+            }
+            if (message != "" && message != this.lastMessage) {
+                this.lastMessage = message
+                // console.log(message)
+            }
+            if (reset) {
+                this.lastHeader = ""
+                this.lastMessage = ""
+            }
+            this.#broadcastToGuiWD(this.lastHeader === "" ? this.lastMessage : this.lastHeader + "\n" + this.lastMessage)
         }
     }
 
@@ -47,7 +61,7 @@ module.exports = class DrawManager {
     }
     #broadcastToGuiWD(message) {
         let now = Date.now()
-        if (now - this.lastLog > 500) {
+        if (now - this.lastLog > 1000 && this.broadcastQueue.length < 2) { // only broadcast if at least 500 ms have passed since last log and there are not already 2 messages in the queue
             this.#broadcastToGui(message)
             this.lastLog = now
         }
